@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Core.Actors.Implementations\Core.Actors.Implementations.csproj" />
+      <ProjectReference Include="..\Guilds.DataStore.Actors.Interfaces\Guilds.DataStore.Actors.Interfaces.csproj" />
+      <ProjectReference Include="..\Guilds.Shared\Guilds.Shared.csproj" />
+      <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Dapr.Actors" Version="1.7.0" />
+    </ItemGroup>
+
+</Project>

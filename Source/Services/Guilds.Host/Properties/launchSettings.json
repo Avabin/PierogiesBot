@@ -1,0 +1,30 @@
+﻿{
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:17966",
+      "sslPort": 44326
+    }
+  },
+  "profiles": {
+    "Guilds.Host": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:7078;http://localhost:5078",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DAPR_HTTP_PORT": 3005,
+        "DAPR_GRPC_PORT": 52000
+      }
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DAPR_HTTP_PORT": 3005,
+        "DAPR_GRPC_PORT": 52000
+      }
+    }
+  }
+}

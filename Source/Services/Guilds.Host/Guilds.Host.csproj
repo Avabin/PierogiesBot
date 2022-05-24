@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Modules\Core.Actors.Implementations\Core.Actors.Implementations.csproj" />
+      <ProjectReference Include="..\..\Modules\Guilds.DataStore.Actors.Implementations\Guilds.DataStore.Actors.Implementations.csproj" />
+      <ProjectReference Include="..\..\Modules\Guilds.DataStore.Actors.Interfaces\Guilds.DataStore.Actors.Interfaces.csproj" />
+      <ProjectReference Include="..\..\Modules\Guilds.Shared\Guilds.Shared.csproj" />
+      <ProjectReference Include="..\..\Modules\Infrastructure\Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="NLog.config" />
+    </ItemGroup>
+
+</Project>
