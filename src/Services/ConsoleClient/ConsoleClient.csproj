@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ConsoleAppFramework" Version="4.2.4"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0"/>
+        <PackageReference Include="Microsoft.Orleans.Client" Version="7.0.0"/>
+        <PackageReference Include="Microsoft.Orleans.Sdk" Version="7.0.0"/>
+        <PackageReference Include="Microsoft.Orleans.Streaming" Version="7.0.0"/>
+        <PackageReference Include="Polly" Version="7.2.3"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Modules\GrainInterfaces\GrainInterfaces.csproj"/>
+        <ProjectReference Include="..\..\Modules\Infrastructure\Infrastructure.csproj"/>
+        <ProjectReference Include="..\..\Modules\Streams\Streams.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="appsettings.Development.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="appsettings.Mongo.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+</Project>

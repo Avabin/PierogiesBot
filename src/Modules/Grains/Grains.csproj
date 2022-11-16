@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Orleans.EventSourcing" Version="7.0.0"/>
+        <PackageReference Include="Microsoft.Orleans.Sdk" Version="7.0.0"/>
+        <PackageReference Include="Microsoft.Orleans.Streaming" Version="7.0.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Core\Core.csproj"/>
+        <ProjectReference Include="..\Discord\Discord.csproj"/>
+        <ProjectReference Include="..\GrainInterfaces\GrainInterfaces.csproj"/>
+        <ProjectReference Include="..\Wow\Wow.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="Games"/>
+    </ItemGroup>
+
+</Project>
