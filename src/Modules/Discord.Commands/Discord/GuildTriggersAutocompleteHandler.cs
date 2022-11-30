@@ -2,22 +2,22 @@
 using Discord.Interactions;
 using GrainInterfaces;
 using GrainInterfaces.Discord.Guilds.Events;
-using GrainInterfaces.Discord.Guilds.MessageTriggers;
 using Microsoft.Extensions.Caching.Memory;
 using Orleans.Streams;
+using Shared.MessageTriggers;
 
 namespace Discord.Commands.Discord;
 
 public class GuildTriggersAutocompleteHandler : AutocompleteHandler, IAsyncDisposable
 {
     private readonly IClusterClient _clusterClient;
-    private readonly List<ulong>    _guilds = new();
-    private readonly IMemoryCache   _memoryCache;
+    private readonly List<ulong> _guilds = new();
+    private readonly IMemoryCache _memoryCache;
 
     public GuildTriggersAutocompleteHandler(IClusterClient clusterClient, IMemoryCache memoryCache)
     {
         _clusterClient = clusterClient;
-        _memoryCache   = memoryCache;
+        _memoryCache = memoryCache;
     }
 
     public async ValueTask DisposeAsync()
@@ -26,7 +26,7 @@ public class GuildTriggersAutocompleteHandler : AutocompleteHandler, IAsyncDispo
         {
             var streamKey = StreamCacheKey(guild);
             var handleKey = StreamHandleCacheKey(guild);
-            var rulesKey  = RulesCacheKey(guild);
+            var rulesKey = RulesCacheKey(guild);
 
             var stream = _memoryCache.Get<IAsyncStream<TriggerEvent>>(streamKey);
 
@@ -44,10 +44,10 @@ public class GuildTriggersAutocompleteHandler : AutocompleteHandler, IAsyncDispo
     }
 
     public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
-        IInteractionContext context,   IAutocompleteInteraction autocompleteInteraction,
-        IParameterInfo      parameter, IServiceProvider         services)
+        IInteractionContext context, IAutocompleteInteraction autocompleteInteraction,
+        IParameterInfo parameter, IServiceProvider services)
     {
-        var filter  = autocompleteInteraction.Data.Current.Value as string;
+        var filter = autocompleteInteraction.Data.Current.Value as string;
         var guildId = context.Guild.Id;
         var stream = Cached(StreamCacheKey(guildId), entry =>
         {
@@ -59,12 +59,12 @@ public class GuildTriggersAutocompleteHandler : AutocompleteHandler, IAsyncDispo
 
         if (!handles.Any()) await stream.SubscribeAsync(CreateOnNextAsync(guildId));
 
-        IEnumerable<MessageTrigger> rules = await CachedRulesAsync(guildId);
+        IEnumerable<IMessageTrigger> rules = await CachedRulesAsync(guildId);
 
         if (filter is not null or "")
             rules = rules.Where(r => r.Trigger.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                                  || r.Response.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                                  || r.Name.ToString().Contains(filter, StringComparison.OrdinalIgnoreCase));
+                                     || r.Response.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                                     || r.Name.ToString().Contains(filter, StringComparison.OrdinalIgnoreCase));
 
         var options = rules.Take(25).Select(x => new AutocompleteResult(x.ToString(), x.Name));
 
@@ -130,18 +130,18 @@ public class GuildTriggersAutocompleteHandler : AutocompleteHandler, IAsyncDispo
         var existing = rules.FirstOrDefault(x => x.Name == update.Trigger.Name);
 
         rules = existing is not null
-                    ? rules.Replace(existing, update.Trigger)
-                    : rules.Add(update.Trigger);
+            ? rules.Replace(existing, update.Trigger)
+            : rules.Add(update.Trigger);
 
         _memoryCache.Set(RulesCacheKey(guildId), rules);
     }
 
 
-    private Task<ImmutableList<MessageTrigger>> CachedRulesAsync(ulong guildId)
+    private Task<ImmutableList<IMessageTrigger>> CachedRulesAsync(ulong guildId)
     {
         return CachedAsync(RulesCacheKey(guildId),
-                           async entry =>
-                               await _clusterClient.GetGuildTriggersMessageWatcherGrain(guildId).GetAllAsync());
+            async entry =>
+                await _clusterClient.GetGuildTriggersMessageWatcherGrain(guildId).GetAllAsync());
     }
 
     private Task<T> CachedAsync<T>(object key, Func<ICacheEntry, Task<T>> func)

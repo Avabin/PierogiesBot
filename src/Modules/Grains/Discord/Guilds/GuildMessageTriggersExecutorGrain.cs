@@ -3,24 +3,24 @@ using Discord;
 using GrainInterfaces;
 using GrainInterfaces.Discord.Guilds;
 using GrainInterfaces.Discord.Guilds.Events;
-using GrainInterfaces.Discord.Guilds.MessageTriggers;
 using Grains.Core;
 using Microsoft.Extensions.Logging;
+using Shared.MessageTriggers;
 
 namespace Grains.Discord.Guilds;
 
 [RegexImplicitStreamSubscription(StreamNamespaces.Triggers)]
 public class GuildMessageTriggersExecutorGrain : EventSubscriberGrain<TriggerEvent>, IGuildMessageTriggersExecutorGrain
 {
-    private readonly IDiscordService                            _discordService;
+    private readonly IDiscordService _discordService;
     private readonly ILogger<GuildMessageTriggersExecutorGrain> _logger;
-    private          ulong                                      _guildId;
+    private ulong _guildId;
 
-    public GuildMessageTriggersExecutorGrain(IDiscordService                            discordService,
-                                             ILogger<GuildMessageTriggersExecutorGrain> logger)
+    public GuildMessageTriggersExecutorGrain(IDiscordService discordService,
+        ILogger<GuildMessageTriggersExecutorGrain> logger)
     {
         _discordService = discordService;
-        _logger         = logger;
+        _logger = logger;
     }
 
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
@@ -37,8 +37,8 @@ public class GuildMessageTriggersExecutorGrain : EventSubscriberGrain<TriggerEve
         await Parallel.ForEachAsync(triggers, async (t, ct) => await HandleTriggerAsync(t, channelId, messageId));
 
         await this.GetTriggersStream(_guildId)
-                  .OnNextAsync(new TriggersExecuted(triggers.Select(x => x.Name).ToList(), _guildId, channelId,
-                                                    messageId));
+            .OnNextAsync(new TriggersExecuted(triggers.Select(x => x.Name).ToList(), _guildId, channelId,
+                messageId));
     }
 
     private async Task HandleTriggerAsync(MessageTrigger t, ulong channelId, ulong messageId)

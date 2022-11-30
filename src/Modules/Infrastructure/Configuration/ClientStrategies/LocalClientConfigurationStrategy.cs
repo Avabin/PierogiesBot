@@ -13,7 +13,7 @@ public class LocalClientConfigurationStrategy : ClientConfigurationStrategyBase
 
     public override void Apply(IClientBuilder builder)
     {
-        if (_configureGateway) builder.UseLocalhostClustering();
+        if (_configureGateway) builder.UseLocalhostClustering(clusterId: "PierogiesBot");
         builder.AddStreaming().AddMemoryStreams(StreamProviders.Default);
         base.Apply(builder);
     }

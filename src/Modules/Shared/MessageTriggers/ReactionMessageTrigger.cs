@@ -1,9 +1,9 @@
-namespace GrainInterfaces.Discord.Guilds.MessageTriggers;
+namespace Shared.MessageTriggers;
 
 [Immutable]
 [GenerateSerializer]
 public abstract record MessageTrigger([property: Id(0)] string Trigger, [property: Id(1)] string Name,
-                                      [property: Id(2)] string Response)
+    [property: Id(2)] string Response) : IMessageTrigger
 {
     public abstract bool IsMatch(string content);
 

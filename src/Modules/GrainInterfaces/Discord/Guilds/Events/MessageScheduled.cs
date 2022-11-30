@@ -1,8 +1,10 @@
-﻿using GrainInterfaces.Discord.Guilds.ScheduledMessages;
+﻿using Shared.ScheduledMessages;
 
 namespace GrainInterfaces.Discord.Guilds.Events;
 
-[Immutable] [GenerateSerializer] public record ScheduledMessageEvent;
+[Immutable]
+[GenerateSerializer]
+public record ScheduledMessageEvent;
 
 [Immutable]
 [GenerateSerializer]
@@ -19,4 +21,4 @@ public record MessageUnregistered
 [Immutable]
 [GenerateSerializer]
 public record ScheduledMessageExecuted([property: Id(0)] string ScheduledMessageName, [property: Id(1)] ulong GuildId,
-                                       [property: Id(2)] ulong  ChannelId) : ScheduledMessageEvent;
+    [property: Id(2)] ulong ChannelId) : ScheduledMessageEvent;

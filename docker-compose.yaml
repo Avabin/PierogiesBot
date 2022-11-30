@@ -6,8 +6,6 @@
     restart: always
     volumes:
       - ./data/mongodb:/data/db
-    ports:
-      - 27017:27017
     expose:
       - 27017
     networks:
@@ -18,9 +16,6 @@
     image: rabbitmq:3-management
     container_name: rabbitmq
     restart: always
-    ports:
-      - 5672:5672
-      - 15672:15672
     expose:
       - 5672
       - 15672
@@ -29,7 +24,7 @@
     
     # backend service
   all-silo:
-    image: ghcr.io/avabin/pierogies-bot:latest
+    image: ghcr.io/avabin/pierogiesbot/silo:latest
     build:
       dockerfile: src/Services/Silo/Dockerfile
       context: .

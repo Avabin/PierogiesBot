@@ -3,15 +3,15 @@ using Core;
 using GrainInterfaces;
 using GrainInterfaces.Discord.Guilds;
 using GrainInterfaces.Discord.Guilds.Events;
-using GrainInterfaces.Discord.Guilds.MessageTriggers;
 using Grains.Core;
 using Orleans.Concurrency;
+using Shared.MessageTriggers;
 
 namespace Grains.Discord.Guilds;
 
 [RegexImplicitStreamSubscription(StreamNamespaces.MessagesWatcher)]
 public class GuildTriggersMessageWatcherGrain : EventSubscriberGrain<GuildReactionsState, MessageReceived>,
-                                                IGuildTriggersMessageWatcherGrain
+    IGuildTriggersMessageWatcherGrain
 {
     private ulong _guildId;
 
@@ -41,11 +41,11 @@ public class GuildTriggersMessageWatcherGrain : EventSubscriberGrain<GuildReacti
         await WriteStateAsync();
     }
 
-    public Task<ImmutableList<MessageTrigger>> GetAllAsync(int limit = 0)
+    public Task<ImmutableList<IMessageTrigger>> GetAllAsync(int limit = 0)
     {
-        var messageTriggers            = State.Triggers.Value.Values.AsEnumerable();
+        var messageTriggers = State.Triggers.Value.Values.AsEnumerable();
         if (limit > 0) messageTriggers = messageTriggers.Take(limit);
-        return Task.FromResult(messageTriggers.ToImmutableList());
+        return Task.FromResult(messageTriggers.Cast<IMessageTrigger>().ToImmutableList());
     }
 
     public Task<bool> ContainsTriggerAsync(string name)
@@ -67,8 +67,8 @@ public class GuildTriggersMessageWatcherGrain : EventSubscriberGrain<GuildReacti
         if (!matched.Any()) return;
 
         var message = new ExecuteTriggers(matched.Select(x => x.Value with { Name = x.Key }).ToImmutableList(),
-                                          @event.ChannelId,
-                                          @event.MessageId);
+            @event.ChannelId,
+            @event.MessageId);
 
         await this.GetTriggersStream(_guildId).OnNextAsync(message);
     }
@@ -77,11 +77,11 @@ public class GuildTriggersMessageWatcherGrain : EventSubscriberGrain<GuildReacti
 [Immutable]
 [GenerateSerializer]
 public record GuildReactionsState([property: Id(0)] Immutable<Dictionary<string, MessageTrigger>> Triggers,
-                                  [property: Id(1)] ImmutableList<ulong>                          MutedChannels)
+    [property: Id(1)] ImmutableList<ulong> MutedChannels)
 {
     public GuildReactionsState() :
         this(new Immutable<Dictionary<string, MessageTrigger>>(new Dictionary<string, MessageTrigger>()),
-             ImmutableList<ulong>.Empty)
+            ImmutableList<ulong>.Empty)
     {
     }
 

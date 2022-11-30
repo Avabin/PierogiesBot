@@ -13,6 +13,7 @@ COPY ["src/Modules/Infrastructure/Infrastructure.csproj", "src/Modules/Infrastru
 COPY ["src/Modules/Grains/Grains.csproj", "src/Modules/Grains/"]
 COPY ["src/Modules/Wow/Wow.csproj", "src/Modules/Wow/"]
 COPY ["src/Modules/Streams/Streams.csproj", "src/Modules/Streams/"]
+COPY ["src/Modules/Shared/Shared.csproj", "src/Modules/Shared/"]
 RUN dotnet restore "src/Services/Silo/Silo.csproj"
 COPY . .
 WORKDIR "/src/Services/Silo"

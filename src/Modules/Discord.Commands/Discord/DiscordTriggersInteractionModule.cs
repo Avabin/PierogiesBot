@@ -1,7 +1,7 @@
 ﻿using Discord.Interactions;
 using Discord.WebSocket;
 using GrainInterfaces;
-using GrainInterfaces.Discord.Guilds.MessageTriggers;
+using Shared.MessageTriggers;
 
 namespace Discord.Commands.Discord;
 
@@ -24,15 +24,16 @@ public class DiscordTriggersInteractionModule : GrainedInteractionModuleBase
 
             if (!user.Roles.Any(x => x.Permissions.Administrator))
                 await
-                    RespondAsync("You already have a trigger set up. Only administrators can have more than one trigger set up.",
-                                 ephemeral: true);
+                    RespondAsync(
+                        "You already have a trigger set up. Only administrators can have more than one trigger set up.",
+                        ephemeral: true);
 
             name = $"{name}_{Guid.NewGuid().ToString("N")[..8]}";
         }
 
         MessageTrigger reaction = regex
-                                      ? new RegexResponseMessageTrigger(trigger, name, response)
-                                      : new SimpleResponseMessageTrigger(trigger, name, response);
+            ? new RegexResponseMessageTrigger(trigger, name, response)
+            : new SimpleResponseMessageTrigger(trigger, name, response);
 
         await grain.AddAsync(name, reaction);
 
@@ -41,9 +42,9 @@ public class DiscordTriggersInteractionModule : GrainedInteractionModuleBase
 
     [SlashCommand("add_reaction", "Add an automatic reaction")]
     public async Task AddSimpleReactionAsync(string trigger,
-                                             [Autocomplete(typeof(EmojisAutocompleteHandler))]
-                                             string emojiName,
-                                             bool regex = false)
+        [Autocomplete(typeof(EmojisAutocompleteHandler))]
+        string emojiName,
+        bool regex = false)
     {
         var grain = Client.GetGuildTriggersMessageWatcherGrain(Context.Guild.Id);
 
@@ -56,8 +57,9 @@ public class DiscordTriggersInteractionModule : GrainedInteractionModuleBase
             if (!user.GuildPermissions.Administrator)
             {
                 await
-                    RespondAsync("You already have a trigger set up. Only administrators can have more than one trigger set up.",
-                                 ephemeral: true);
+                    RespondAsync(
+                        "You already have a trigger set up. Only administrators can have more than one trigger set up.",
+                        ephemeral: true);
                 return;
             }
 
@@ -65,8 +67,8 @@ public class DiscordTriggersInteractionModule : GrainedInteractionModuleBase
         }
 
         MessageTrigger reaction = regex
-                                      ? new RegexReactionMessageTrigger(trigger, emojiName, name)
-                                      : new SimpleReactionMessageTrigger(trigger, emojiName, name);
+            ? new RegexReactionMessageTrigger(trigger, emojiName, name)
+            : new SimpleReactionMessageTrigger(trigger, emojiName, name);
 
         await grain.AddAsync(name, reaction);
 

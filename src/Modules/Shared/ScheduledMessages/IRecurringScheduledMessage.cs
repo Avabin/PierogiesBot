@@ -1,4 +1,4 @@
-﻿namespace GrainInterfaces.Discord.Guilds.ScheduledMessages;
+﻿namespace Shared.ScheduledMessages;
 
 public interface IRecurringScheduledMessage
 {

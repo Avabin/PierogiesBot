@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace GrainInterfaces.Discord.Guilds.MessageTriggers;
+namespace Shared.MessageTriggers;
 
 [Immutable]
 [GenerateSerializer]

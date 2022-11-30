@@ -1,6 +1,7 @@
 ﻿using System.Collections.Immutable;
 using Discord;
 using GrainInterfaces.Discord.Guilds;
+using Shared;
 
 namespace Grains.Discord.Guilds;
 

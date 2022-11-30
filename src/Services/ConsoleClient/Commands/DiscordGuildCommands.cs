@@ -1,8 +1,8 @@
 ﻿using GrainInterfaces;
 using GrainInterfaces.Discord;
 using GrainInterfaces.Discord.Guilds;
-using GrainInterfaces.Discord.Guilds.MessageTriggers;
 using Microsoft.Extensions.Logging;
+using Shared.MessageTriggers;
 
 namespace ConsoleClient.Commands;
 
@@ -44,53 +44,53 @@ public class GuildsCommands : ConsoleAppBase
     [Command("trigger")]
     public class TriggerCommands : ConsoleAppBase
     {
-        private readonly IClusterClient           _clusterClient;
+        private readonly IClusterClient _clusterClient;
         private readonly ILogger<TriggerCommands> _logger;
 
         public TriggerCommands(IClusterClient clusterClient, ILogger<TriggerCommands> logger)
         {
             _clusterClient = clusterClient;
-            _logger        = logger;
+            _logger = logger;
         }
 
         [Command("list", "Lists all triggers")]
         public async Task List([Option(0, "Guild snowflake ID")] ulong guildId)
         {
-            var grain    = _clusterClient.GetGuildTriggersMessageWatcherGrain(guildId);
+            var grain = _clusterClient.GetGuildTriggersMessageWatcherGrain(guildId);
             var triggers = await grain.GetAllAsync();
 
             foreach (var trigger in triggers) _logger.LogInformation("Trigger: {@Trigger}", trigger);
         }
 
         [Command("simple-response", "Adds a simple match response trigger")]
-        public async Task SimpleResponse([Option(0,    "Guild snowflake ID")] ulong   guildId,
-                                         [Option(1,    "Trigger")]            string  trigger,
-                                         [Option(2,    "Response")]           string  response,
-                                         [Option("-n", "Name")]               string? name = null)
+        public async Task SimpleResponse([Option(0, "Guild snowflake ID")] ulong guildId,
+            [Option(1, "Trigger")] string trigger,
+            [Option(2, "Response")] string response,
+            [Option("-n", "Name")] string? name = null)
         {
             name ??= trigger;
             await Grain(guildId).AddAsync(name, new SimpleResponseMessageTrigger(trigger, name, response));
 
             _logger.LogInformation("Added simple trigger {Name} with trigger {Trigger} and response {Response}", name,
-                                   trigger, response);
+                trigger, response);
         }
 
         [Command("regex-response", "Adds a regex match response trigger")]
-        public async Task RegexResponse([Option(0,    "Guild snowflake ID")] ulong   guildId,
-                                        [Option(1,    "Trigger")]            string  trigger,
-                                        [Option(2,    "Response")]           string  response,
-                                        [Option("-n", "Name")]               string? name = null)
+        public async Task RegexResponse([Option(0, "Guild snowflake ID")] ulong guildId,
+            [Option(1, "Trigger")] string trigger,
+            [Option(2, "Response")] string response,
+            [Option("-n", "Name")] string? name = null)
         {
             name ??= trigger;
             await Grain(guildId).AddAsync(name, new RegexResponseMessageTrigger(trigger, name, response));
 
             _logger.LogInformation("Added regex trigger {Name} with trigger {Trigger} and response {Response}", name,
-                                   trigger, response);
+                trigger, response);
         }
 
         [Command("remove", "Removes a trigger")]
-        public async Task Remove([Option(0, "Guild snowflake ID")] ulong  guildId,
-                                 [Option(1, "Trigger name")]       string name)
+        public async Task Remove([Option(0, "Guild snowflake ID")] ulong guildId,
+            [Option(1, "Trigger name")] string name)
         {
             await Grain(guildId).RemoveAsync(name);
 
@@ -98,29 +98,29 @@ public class GuildsCommands : ConsoleAppBase
         }
 
         [Command("simple-reaction", "Adds a simple match reaction trigger")]
-        public async Task SimpleReaction([Option(0,    "Guild snowflake ID")] ulong   guildId,
-                                         [Option(1,    "Trigger")]            string  trigger,
-                                         [Option(2,    "Reaction")]           string  reaction,
-                                         [Option("-n", "Name")]               string? name = null)
+        public async Task SimpleReaction([Option(0, "Guild snowflake ID")] ulong guildId,
+            [Option(1, "Trigger")] string trigger,
+            [Option(2, "Reaction")] string reaction,
+            [Option("-n", "Name")] string? name = null)
         {
             name ??= trigger;
             await Grain(guildId).AddAsync(name, new SimpleReactionMessageTrigger(trigger, name, reaction));
 
             _logger.LogInformation("Added simple trigger {Name} with trigger {Trigger} and reaction {Reaction}", name,
-                                   trigger, reaction);
+                trigger, reaction);
         }
 
         [Command("regex-reaction", "Adds a regex match reaction trigger")]
-        public async Task RegexReaction([Option(0,    "Guild snowflake ID")] ulong   guildId,
-                                        [Option(1,    "Trigger")]            string  trigger,
-                                        [Option(2,    "Reaction")]           string  reaction,
-                                        [Option("-n", "Name")]               string? name = null)
+        public async Task RegexReaction([Option(0, "Guild snowflake ID")] ulong guildId,
+            [Option(1, "Trigger")] string trigger,
+            [Option(2, "Reaction")] string reaction,
+            [Option("-n", "Name")] string? name = null)
         {
             name ??= trigger;
             await Grain(guildId).AddAsync(name, new RegexReactionMessageTrigger(trigger, name, reaction));
 
             _logger.LogInformation("Added regex trigger {Name} with trigger {Trigger} and reaction {Reaction}", name,
-                                   trigger, reaction);
+                trigger, reaction);
         }
 
         private IGuildTriggersMessageWatcherGrain Grain(ulong guildId)
@@ -141,8 +141,8 @@ public class GuildsCommands : ConsoleAppBase
         }
 
         [Command("timezone", "Set guild timezone")]
-        public async Task Timezone([Option(0, "Guild snowflake ID")] ulong  guildId,
-                                   [Option(1, "Timezone")]           string timezone)
+        public async Task Timezone([Option(0, "Guild snowflake ID")] ulong guildId,
+            [Option(1, "Timezone")] string timezone)
         {
             var stream = _clusterClient.GetDiscordGuildStream(guildId);
 

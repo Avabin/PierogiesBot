@@ -1,13 +1,14 @@
-﻿using Core;
+﻿using System.Collections.Immutable;
+using Core;
 using Discord;
 using GrainInterfaces;
 using GrainInterfaces.Discord.Guilds;
 using GrainInterfaces.Discord.Guilds.Events;
-using GrainInterfaces.Discord.Guilds.ScheduledMessages;
 using Grains.Core;
 using Microsoft.Extensions.Logging;
 using Orleans.Concurrency;
 using Orleans.Runtime;
+using Shared.ScheduledMessages;
 using TimeZoneConverter;
 
 namespace Grains.Discord.Guilds;
@@ -16,15 +17,15 @@ public class GuildScheduledMessagesWatcherGrain :
     EventEmitterGrain<GuildScheduledMessagesWatcherGrainState, ScheduledMessageEvent>,
     IGuildScheduledMessagesWatcherGrain, IRemindable
 {
-    private readonly IDiscordService                             _discordService;
+    private readonly IDiscordService _discordService;
     private readonly ILogger<GuildScheduledMessagesWatcherGrain> _logger;
-    private          ulong                                       _guildId;
+    private ulong _guildId;
 
-    public GuildScheduledMessagesWatcherGrain(IDiscordService                             discordService,
-                                              ILogger<GuildScheduledMessagesWatcherGrain> logger)
+    public GuildScheduledMessagesWatcherGrain(IDiscordService discordService,
+        ILogger<GuildScheduledMessagesWatcherGrain> logger)
     {
         _discordService = discordService;
-        _logger         = logger;
+        _logger = logger;
     }
 
     public async Task AddAsync(ScheduledMessage message)
@@ -34,7 +35,7 @@ public class GuildScheduledMessagesWatcherGrain :
         await WriteStateAsync();
         await ScheduleAsync(message);
         await NotifyAsync(StreamNamespaces.ForScheduledMessages(_guildId), this.GetPrimaryKeyString(),
-                          new MessageScheduled(message, _guildId));
+            new MessageScheduled(message, _guildId));
     }
 
     public async Task RemoveAsync(string name)
@@ -48,16 +49,21 @@ public class GuildScheduledMessagesWatcherGrain :
         return Task.FromResult(State.Contains(name));
     }
 
+    public Task<ImmutableList<IScheduledMessage>> GetAllAsync()
+    {
+        return Task.FromResult(State.ScheduledMessages.Value.Values.Cast<IScheduledMessage>().ToImmutableList());
+    }
+
     public async Task ReceiveReminder(string reminderName, TickStatus status)
     {
         _logger.LogDebug("Received reminder '{ReminderName}' for guild {GuildId}", reminderName, _guildId);
         var scheduledMessage = State.GetByName(reminderName);
         await (scheduledMessage switch
-                  {
-                      ScheduledEmojiMessage scheduledEmojiMessage => HandleEmojiAsync(scheduledEmojiMessage),
-                      ScheduledTextMessage scheduledTextMessage   => HandleTextAsync(scheduledTextMessage),
-                      _                                           => Task.CompletedTask
-                  });
+        {
+            ScheduledEmojiMessage scheduledEmojiMessage => HandleEmojiAsync(scheduledEmojiMessage),
+            ScheduledTextMessage scheduledTextMessage => HandleTextAsync(scheduledTextMessage),
+            _ => Task.CompletedTask
+        });
 
         if (scheduledMessage is not IRecurringScheduledMessage)
         {
@@ -69,7 +75,7 @@ public class GuildScheduledMessagesWatcherGrain :
         }
 
         await NotifyAsync(StreamNamespaces.ForScheduledMessages(_guildId), this.GetPrimaryKeyString(),
-                          new ScheduledMessageExecuted(scheduledMessage.Name, _guildId, scheduledMessage.ChannelId));
+            new ScheduledMessageExecuted(scheduledMessage.Name, _guildId, scheduledMessage.ChannelId));
     }
 
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
@@ -87,13 +93,13 @@ public class GuildScheduledMessagesWatcherGrain :
 
         var timezone = TZConvert.GetTimeZoneInfo(timezoneId);
 
-        var now          = DateTimeOffset.Now;
+        var now = DateTimeOffset.Now;
         var convertedNow = TimeZoneInfo.ConvertTime(now, timezone);
 
         var dueTime = message.At.Subtract(convertedNow);
 
         _logger.LogDebug("Scheduling message '{Name}' for guild {GuildId} in {DueTime}", message.Name, _guildId,
-                         dueTime);
+            dueTime);
 
         var period = TimeSpan.FromMinutes(1);
 
@@ -117,7 +123,7 @@ public class GuildScheduledMessagesWatcherGrain :
         await WriteStateAsync();
 
         await NotifyAsync(StreamNamespaces.ForScheduledMessages(_guildId), this.GetPrimaryKeyString(),
-                          new MessageUnregistered(name, _guildId));
+            new MessageUnregistered(name, _guildId));
     }
 
     private async Task HandleTextAsync(ScheduledTextMessage scheduledTextMessage)

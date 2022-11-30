@@ -26,6 +26,7 @@ public static class ApplicationHostExtensions
         var configuration = builder.Configuration;
         builder.Services.AddOrleans(siloBuilder =>
         {
+            siloBuilder.AddActivityPropagation();
             var siloTypeName = configuration.GetValue<string>("SiloType");
             var siloType =
                 SiloType.Parse(siloTypeName ?? throw new InvalidOperationException("SiloType is not defined"));

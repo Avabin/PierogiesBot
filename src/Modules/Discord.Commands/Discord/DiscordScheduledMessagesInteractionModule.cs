@@ -1,8 +1,8 @@
 ﻿using Discord.Interactions;
 using Discord.WebSocket;
 using GrainInterfaces;
-using GrainInterfaces.Discord.Guilds.ScheduledMessages;
 using Microsoft.Extensions.Logging;
+using Shared.ScheduledMessages;
 using TimeZoneConverter;
 
 namespace Discord.Commands.Discord;
@@ -11,8 +11,8 @@ public class DiscordScheduledMessagesInteractionModule : GrainedInteractionModul
 {
     private readonly ILogger<DiscordScheduledMessagesInteractionModule> _logger;
 
-    public DiscordScheduledMessagesInteractionModule(IClusterClient                                     clusterClient,
-                                                     ILogger<DiscordScheduledMessagesInteractionModule> logger) :
+    public DiscordScheduledMessagesInteractionModule(IClusterClient clusterClient,
+        ILogger<DiscordScheduledMessagesInteractionModule> logger) :
         base(clusterClient)
     {
         _logger = logger;
@@ -22,9 +22,9 @@ public class DiscordScheduledMessagesInteractionModule : GrainedInteractionModul
     public async Task ScheduleMessageAsync(TimeOnly time, string message)
     {
         _logger.LogInformation("Scheduling message '{Message}' at {Time}", message, time);
-        var user       = (SocketGuildUser)Context.User;
-        var guildId    = Context.Guild.Id;
-        var grain      = Client.GetGuildScheduledMessagesWatcherGrain(guildId);
+        var user = (SocketGuildUser)Context.User;
+        var guildId = Context.Guild.Id;
+        var grain = Client.GetGuildScheduledMessagesWatcherGrain(guildId);
         var guildGrain = Client.GetDiscordGuildGrain(guildId);
 
         var timezoneId = await guildGrain.GetTimezoneAsync();
@@ -36,7 +36,7 @@ public class DiscordScheduledMessagesInteractionModule : GrainedInteractionModul
             return;
         }
 
-        var now       = DateTimeOffset.Now;
+        var now = DateTimeOffset.Now;
         var converted = TimeZoneInfo.ConvertTime(now, timezone!);
 
         _logger.LogDebug("Current time is {Now}, converted time is {Converted}", now, converted);
@@ -49,7 +49,7 @@ public class DiscordScheduledMessagesInteractionModule : GrainedInteractionModul
         }
 
         var at = new DateTimeOffset(converted.Year, converted.Month, converted.Day, time.Hour, time.Minute, 0,
-                                    converted.Offset);
+            converted.Offset);
 
         _logger.LogDebug("Scheduling message at {At}", at);
         var name = Context.User.Id.ToString("D");
