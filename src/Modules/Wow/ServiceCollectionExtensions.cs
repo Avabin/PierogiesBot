@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using RestEase;
 using Wow.Blizzard;
 using Wow.Blizzard.Client;
@@ -28,5 +29,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IBlizzardRealmsClient, BlizzardRealmsClient>();
 
         return services;
+    }
+
+    public static IServiceCollection AddWowServices(this IServiceCollection services, IConfigurationSection section)
+    {
+        return services.AddWowServices(section.Bind);
     }
 }

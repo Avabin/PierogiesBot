@@ -1,4 +1,4 @@
-﻿using GrainInterfaces.Wow;
+﻿using GrainInterfaces;
 using Microsoft.Extensions.Logging;
 
 namespace ConsoleClient.Commands;
@@ -6,10 +6,6 @@ namespace ConsoleClient.Commands;
 [Command("wow", "World of Warcraft commands")]
 public class WowCommands : ConsoleAppBase
 {
-    public WowCommands()
-    {
-    }
-
     [Command("character", "Character commands")]
     public class CharacterCommands : ConsoleAppBase
     {
@@ -25,8 +21,8 @@ public class WowCommands : ConsoleAppBase
                                             [Option(1, "Realm name")]                    string realm,
                                             [Option(2, "Character name")]                string name)
         {
-            var key       = new WowCharacterKey(server, realm, name);
-            var grain     = _clusterClient.GetGrain<IWowCharacterGrain>(key.ToString());
+            var grain = _clusterClient.GetWowCharacterGrain(server, realm, name);
+
             var character = await grain.GetViewAsync();
 
             Context.Logger.LogWarning("Character: {@Character}", character);

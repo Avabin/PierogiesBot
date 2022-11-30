@@ -1,6 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Core;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
+using Orleans.Streams;
+using Streams;
 
 namespace Infrastructure.Configuration.SiloStrategies;
 
@@ -13,8 +17,8 @@ public class MongoSiloConfigurationStrategy : SiloConfigurationStrategyBase
     private readonly int    _siloPort;
 
     public MongoSiloConfigurationStrategy(int siloPort,    string clusterId, string serviceId, string? connectionString,
-                                          int gatewayPort, SiloType siloType, IConfiguration configuration) :
-        base(siloType, configuration)
+                                          int gatewayPort, SiloType siloType, string? discordToken = "") :
+        base(siloType)
     {
         _siloPort  = siloPort;
         _clusterId = clusterId;
@@ -24,8 +28,11 @@ public class MongoSiloConfigurationStrategy : SiloConfigurationStrategyBase
         _gatewayPort      = gatewayPort;
     }
 
-    public override void Apply(ISiloBuilder builder)
+    public override void Apply(ISiloBuilder builder, IConfiguration configuration)
     {
+        builder.Services.AddOptions().Configure<RabbitMQSettings>(configuration.GetSection("RabbitMQSettings"));
+        builder.Services.AddTransient<RabbitMQQueueAdapterFactory>();
+        builder.AddStreaming().AddPersistentStreams(StreamProviders.Default, AdapterFactory, ConfigureStream);
         builder.ConfigureEndpoints(_siloPort, _gatewayPort, listenOnAnyHostAddress: true);
         builder.Configure<ClusterOptions>(x =>
         {
@@ -56,6 +63,17 @@ public class MongoSiloConfigurationStrategy : SiloConfigurationStrategyBase
             options.ClientName   = _serviceId;
             options.DatabaseName = _clusterId;
         });
-        base.Apply(builder);
+        base.Apply(builder, configuration);
+    }
+
+
+    private void ConfigureStream(ISiloPersistentStreamConfigurator configurator)
+    {
+        // empty
+    }
+
+    private IQueueAdapterFactory AdapterFactory(IServiceProvider sp, string name)
+    {
+        return sp.GetRequiredService<RabbitMQQueueAdapterFactory>();
     }
 }

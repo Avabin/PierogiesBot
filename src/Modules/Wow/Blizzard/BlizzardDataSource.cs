@@ -1,4 +1,4 @@
-﻿using GrainInterfaces.Wow.Blizzard;
+﻿using GrainInterfaces;
 using Microsoft.Extensions.Logging;
 using Wow.Blizzard.Client;
 using Wow.Shared;
@@ -23,10 +23,10 @@ internal class BlizzardDataSource : IWowDataSource
 
     public async Task<Character?> GetCharacterAsync(string realm, string name)
     {
-        var tokenGrain = _clusterClient.GetGrain<IBlizzardTokenGrain>("");
+        var tokenGrain = _clusterClient.GetBlizzardTokenGrain();
         var token      = await tokenGrain.GetTokenAsync();
 
-        var realmGrain = _clusterClient.GetGrain<IBlizzardRealmGrain>(realm);
+        var realmGrain = _clusterClient.GetBlizzardRealmGrain(realm);
 
         var region = await realmGrain.GetRegionAsync();
 

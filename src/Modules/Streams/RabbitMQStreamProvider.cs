@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Core;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans.Runtime;
 using Orleans.Streams;
@@ -21,18 +22,21 @@ public class RabbitMQStreamProvider : IQueueAdapter
     };
 
     private readonly ILogger<RabbitMQStreamProvider> _logger;
+    private readonly IOptions<RabbitMQSettings>      _options;
 
-    public RabbitMQStreamProvider(ILogger<RabbitMQStreamProvider> logger)
+    public RabbitMQStreamProvider(ILogger<RabbitMQStreamProvider> logger, IOptions<RabbitMQSettings> options)
     {
-        _logger = logger;
+        _logger  = logger;
+        _options = options;
 
         _connectionFactory = new Lazy<IConnectionFactory>(() =>
         {
             var factory = new ConnectionFactory
             {
-                HostName = "localhost",
-                UserName = "guest",
-                Password = "guest"
+                HostName    = _options.Value.Host,
+                UserName    = _options.Value.UserName,
+                Password    = _options.Value.Password,
+                VirtualHost = _options.Value.VirtualHost
             };
             return factory;
         });
@@ -79,7 +83,7 @@ public class RabbitMQStreamProvider : IQueueAdapter
         return new RabbitMQQueueAdapterReceiver(Connection, queueId);
     }
 
-    public string                  Name         { get; } = StreamProviders.RabbitMQ;
+    public string                  Name         { get; } = StreamProviders.Default;
     public bool                    IsRewindable { get; } = false;
     public StreamProviderDirection Direction    { get; } = StreamProviderDirection.ReadWrite;
 }

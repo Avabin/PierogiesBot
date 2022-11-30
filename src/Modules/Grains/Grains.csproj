@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Orleans.EventSourcing" Version="7.0.0"/>
+        <PackageReference Include="Microsoft.Orleans.Reminders" Version="7.0.0"/>
         <PackageReference Include="Microsoft.Orleans.Sdk" Version="7.0.0"/>
         <PackageReference Include="Microsoft.Orleans.Streaming" Version="7.0.0"/>
     </ItemGroup>

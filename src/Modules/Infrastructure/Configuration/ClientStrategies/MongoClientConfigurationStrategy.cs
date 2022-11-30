@@ -1,5 +1,9 @@
-﻿using Orleans.Configuration;
+﻿using Core;
+using Microsoft.Extensions.DependencyInjection;
+using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
+using Orleans.Streams;
+using Streams;
 
 namespace Infrastructure.Configuration.ClientStrategies;
 
@@ -20,6 +24,8 @@ public class MongoClientConfigurationStrategy : ClientConfigurationStrategyBase
 
     public override void Apply(IClientBuilder builder)
     {
+        builder.Services.AddTransient<RabbitMQQueueAdapterFactory>();
+        builder.AddStreaming().AddPersistentStreams(StreamProviders.Default, AdapterFactory, ConfigureStream);
         builder.Configure<ClusterOptions>(x =>
         {
             x.ClusterId = _clusterId;
@@ -33,5 +39,16 @@ public class MongoClientConfigurationStrategy : ClientConfigurationStrategyBase
             options.Strategy     = MongoDBMembershipStrategy.SingleDocument;
         });
         base.Apply(builder);
+    }
+
+
+    private void ConfigureStream(IClusterClientPersistentStreamConfigurator obj)
+    {
+        // empty
+    }
+
+    private IQueueAdapterFactory AdapterFactory(IServiceProvider sp, string name)
+    {
+        return sp.GetRequiredService<RabbitMQQueueAdapterFactory>();
     }
 }

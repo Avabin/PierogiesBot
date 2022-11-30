@@ -2,5 +2,5 @@
 
 public static class StreamProviders
 {
-    public const string RabbitMQ = "RabbitMQ";
+    public const string Default = "Default";
 }

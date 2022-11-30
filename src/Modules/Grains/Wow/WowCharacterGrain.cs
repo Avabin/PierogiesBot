@@ -51,11 +51,11 @@ public class WowCharacterGrain : Grain<WowCharacterState>, IWowCharacterGrain
         return Task.FromResult(Name());
     }
 
-    public Task<CharacterView> GetViewAsync()
+    public Task<WowCharacterView> GetViewAsync()
     {
         var (server, realm, name) = WowCharacterKey.Parse(this.GetPrimaryKeyString());
 
-        return Task.FromResult(new CharacterView(server, State.Realm, State.Name, State.Level));
+        return Task.FromResult(new WowCharacterView(server, State.Realm, State.Name, State.Level));
     }
 
     public override async Task OnActivateAsync(CancellationToken cancellationToken)

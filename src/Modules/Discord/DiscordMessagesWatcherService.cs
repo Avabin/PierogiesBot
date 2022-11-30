@@ -1,7 +1,7 @@
 ﻿using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using Core;
+using GrainInterfaces;
 using GrainInterfaces.Discord.Guilds.Events;
 using Microsoft.Extensions.Caching.Memory;
 using Orleans.Streams;
@@ -10,24 +10,23 @@ namespace Discord;
 
 public class DiscordMessagesWatcherService : IDiscordMessagesWatcherService
 {
-    private readonly IDiscordService       _discordService;
-    private readonly IMemoryCache          _memoryCache;
-    private readonly Lazy<IStreamProvider> _streamProvider;
-    private          IDisposable?          _subscription;
+    private readonly IClusterClient  _client;
+    private readonly IDiscordService _discordService;
+    private readonly IMemoryCache    _memoryCache;
+    private          IDisposable?    _subscription;
 
     public DiscordMessagesWatcherService(IClusterClient client, IDiscordService discordService,
                                          IMemoryCache   memoryCache)
     {
+        _client         = client;
         _discordService = discordService;
         _memoryCache    = memoryCache;
-
-        _streamProvider = new Lazy<IStreamProvider>(() => client.GetStreamProvider(StreamProviders.RabbitMQ));
     }
-
-    private IStreamProvider StreamProvider => _streamProvider.Value;
 
     public async Task StartAsync()
     {
+        if (_subscription is not null)
+            return;
         await _discordService.StartAsync();
         _subscription = _discordService.MessagesObservable
                                        .Where(x => x.Channel is IGuildChannel && x is { Author.IsBot: false })
@@ -44,6 +43,8 @@ public class DiscordMessagesWatcherService : IDiscordMessagesWatcherService
 
     public async Task StopAsync()
     {
+        if (_subscription is null)
+            return;
         _subscription?.Dispose();
 
         await _discordService.StopAsync();
@@ -51,7 +52,7 @@ public class DiscordMessagesWatcherService : IDiscordMessagesWatcherService
 
     private IAsyncStream<MessagesWatcherEvent> Stream(ulong id)
     {
-        return StreamProvider.GetStream<MessagesWatcherEvent>(StreamNamespaces.MessagesWatcher, id.ToString());
+        return _client.GetMessagesWatcherStream(id);
     }
 }
 

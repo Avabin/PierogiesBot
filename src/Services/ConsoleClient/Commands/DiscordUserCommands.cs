@@ -1,8 +1,7 @@
 ﻿using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using Core;
-using GrainInterfaces.Discord;
-using Grains.Discord;
+using GrainInterfaces;
+using GrainInterfaces.Discord.Users;
 using Microsoft.Extensions.Logging;
 using Orleans.Streams;
 
@@ -14,21 +13,18 @@ public class DiscordUserCommands : ConsoleAppBase
     [Command("change")]
     public class DiscordChangeUserInfoCommands : ConsoleAppBase
     {
-        private readonly Lazy<IStreamProvider> _streamProvider;
+        private readonly IClusterClient _clusterClient;
 
         public DiscordChangeUserInfoCommands(IClusterClient clusterClient)
         {
-            _streamProvider =
-                new Lazy<IStreamProvider>(() => clusterClient.GetStreamProvider(StreamProviders.RabbitMQ));
+            _clusterClient = clusterClient;
         }
-
-        private IStreamProvider StreamProvider => _streamProvider.Value;
 
         [Command("username", "Change username")]
         public async Task ChangeUsernameAsync([Option(0, "User Snowflake ID")] ulong  userId,
                                               [Option(1, "New username")]      string username)
         {
-            var @event  = new ChangeUsername(username);
+            var @event  = new ChangeUserUsername(username);
             var stream  = Stream(userId);
             var subject = new Subject<DiscordUserEvent>();
             var sub = await stream.SubscribeAsync((userEvent, token) =>
@@ -41,12 +37,13 @@ public class DiscordUserCommands : ConsoleAppBase
 
             try
             {
-                var result = await subject.OfType<ChangeUsername>().Take(1).Timeout(TimeSpan.FromSeconds(5));
+                var result = await subject.OfType<ChangeUserUsername>().Take(1).Timeout(TimeSpan.FromSeconds(5));
                 Console.WriteLine($"Username changed to {result.Username}");
             }
             catch (TimeoutException)
             {
                 Context.Logger.LogWarning("Timeout of 5 seconds reached");
+                Console.WriteLine("Timeout of 5 seconds reached");
             }
             finally
             {
@@ -58,7 +55,7 @@ public class DiscordUserCommands : ConsoleAppBase
         public async Task ChangeDiscriminatorAsync([Option(0, "User Snowflake ID")] ulong userId,
                                                    [Option(1, "New discriminator")] int   discriminator)
         {
-            var @event  = new ChangeDiscriminator(discriminator);
+            var @event  = new ChangeUserDiscriminator(discriminator);
             var stream  = Stream(userId);
             var subject = new Subject<DiscordUserEvent>();
             var sub = await stream.SubscribeAsync((userEvent, token) =>
@@ -71,12 +68,14 @@ public class DiscordUserCommands : ConsoleAppBase
 
             try
             {
-                var result = await subject.OfType<ChangeDiscriminator>().Take(1).Timeout(TimeSpan.FromSeconds(5));
+                var result = await subject.OfType<ChangeUserDiscriminator>().Take(1).Timeout(TimeSpan.FromSeconds(5));
                 Context.Logger.LogWarning("Discriminator changed to {Discriminator}", result.Discriminator);
+                Console.WriteLine($"Discriminator changed to {result.Discriminator}");
             }
             catch (TimeoutException)
             {
                 Context.Logger.LogWarning("Timeout of 5 seconds reached");
+                Console.WriteLine("Timeout of 5 seconds reached");
             }
             finally
             {
@@ -88,7 +87,7 @@ public class DiscordUserCommands : ConsoleAppBase
         public async Task ChangeAvatarAsync([Option(0, "User Snowflake ID")] ulong  userId,
                                             [Option(1, "New avatar")]        string avatar)
         {
-            var @event  = new ChangeAvatar(avatar);
+            var @event  = new ChangeUserAvatar(avatar);
             var stream  = Stream(userId);
             var subject = new Subject<DiscordUserEvent>();
             var sub = await stream.SubscribeAsync((userEvent, token) =>
@@ -101,12 +100,14 @@ public class DiscordUserCommands : ConsoleAppBase
 
             try
             {
-                var result = await subject.OfType<ChangeAvatar>().Take(1).Timeout(TimeSpan.FromSeconds(5));
+                var result = await subject.OfType<ChangeUserAvatar>().Take(1).Timeout(TimeSpan.FromSeconds(5));
                 Context.Logger.LogWarning("Avatar changed to {Avatar}", result.Avatar);
+                Console.WriteLine($"Avatar changed to {result.Avatar}");
             }
             catch (TimeoutException)
             {
                 Context.Logger.LogWarning("Timeout of 5 seconds reached");
+                Console.WriteLine("Timeout of 5 seconds reached");
             }
             finally
             {
@@ -116,7 +117,7 @@ public class DiscordUserCommands : ConsoleAppBase
 
         private IAsyncStream<DiscordUserEvent> Stream(ulong userId)
         {
-            return StreamProvider.GetStream<DiscordUserEvent>(StreamNamespaces.DiscordUser, userId.ToString());
+            return _clusterClient.GetDiscordUserStream(userId);
         }
     }
 
@@ -133,10 +134,10 @@ public class DiscordUserCommands : ConsoleAppBase
         [Command("username", "Get username")]
         public async Task GetUsernameAsync([Option(0, "User Snowflake ID")] ulong userId)
         {
-            var grain    = _clusterClient.GetGrain<IDiscordUserGrain>(userId.ToString());
+            var grain    = _clusterClient.GetDiscordUserGrain(userId);
             var username = await grain.GetUsernameAsync();
 
-            Context.Logger.LogWarning($"Username: {username}");
+            Console.WriteLine($"Username: {username}");
         }
     }
 }

@@ -1,0 +1,66 @@
+﻿services:
+  # mongodb database
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    volumes:
+      - ./data/mongodb:/data/db
+    ports:
+      - 27017:27017
+    expose:
+      - 27017
+    networks:
+      - backend
+
+    # rabbitmq message broker
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - 5672:5672
+      - 15672:15672
+    expose:
+      - 5672
+      - 15672
+    networks:
+      - backend
+    
+    # backend service
+  all-silo:
+    image: ghcr.io/avabin/pierogies-bot:latest
+    build:
+      dockerfile: src/Services/Silo/Dockerfile
+      context: .
+    container_name: silo
+    entrypoint: [ "dotnet", "Silo.dll" ]
+    depends_on:
+      - mongodb
+      - rabbitmq
+    ports:
+      - 11111:11111
+      - 30000:30000
+    expose:
+      - 11111
+      - 30000
+    networks:
+      - backend
+    environment:
+      - DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0
+      - DOTNET_ENVIRONMENT=Docker
+      - DOTNET_Blizzard__ClientId=${BLIZZARD_CLIENT_ID}
+      - DOTNET_Blizzard__ClientSecret=${BLIZZARD_CLIENT_SECRET}
+      - DOTNET_Discord__Token=${DISCORD_TOKEN}
+      - DOTNET_SiloType=All
+      - DOTNET_ConnectionStrings__MongoDB=mongodb://mongodb:27017
+      - DOTNET_RabbitMQSettings__Host=rabbitmq
+      - DOTNET_RabbitMQSettings__Port=5672
+      - DOTNET_RabbitMQSettings__UserName=guest
+      - DOTNET_RabbitMQSettings__Password=guest
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  mongodb:

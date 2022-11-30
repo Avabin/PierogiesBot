@@ -11,12 +11,14 @@ internal class WowService : IWowService
         _dataSources = dataSources.ToDictionary(x => x.Server, x => x);
     }
 
-    public async Task<CharacterView?> FetchCharacterAsync(string server, string realm, string name)
+    public async Task<WowCharacterView?> FetchCharacterAsync(string server, string realm, string name)
     {
         if (!_dataSources.TryGetValue(server, out var dataSource)) return null;
 
         var character = await dataSource.GetCharacterAsync(realm, name);
 
-        return character is null ? null : new CharacterView(server, character.Realm, character.Name, character.Level);
+        return character is null
+                   ? null
+                   : new WowCharacterView(server, character.Realm, character.Name, character.Level);
     }
 }

@@ -4,5 +4,5 @@ namespace Wow;
 
 public interface IWowService
 {
-    Task<CharacterView?> FetchCharacterAsync(string server, string realm, string name);
+    Task<WowCharacterView?> FetchCharacterAsync(string server, string realm, string name);
 }

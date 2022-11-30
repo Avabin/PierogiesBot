@@ -1,21 +1,22 @@
-﻿FROM mcr.microsoft.com/dotnet/runtime:7.0 AS base
+﻿FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
-WORKDIR /src
-COPY ["src/Services/Silo/Silo.csproj", "Silo/"]
-COPY ["src/Modules/Grains/Grains.csproj", "Grains/"]
-COPY ["src/Modules/Core/Core.csproj", "Core/"]
-COPY ["src/Modules/GrainInterfaces/GrainInterfaces.csproj", "GrainInterfaces/"]
-COPY ["src/Modules/Wow.Shared/Wow.Shared.csproj", "Wow.Shared/"]
-COPY ["src/Modules/Wow/Wow.csproj", "Wow/"]
-COPY ["src/Modules/Discord/Discord.csproj", "Discord/"]
-COPY ["src/Modules/Infrastructure/Infrastructure.csproj", "Infrastructure/"]
-COPY ["src/Modules/Streams/Streams.csproj", "Streams/"]
+COPY ["src/Services/Silo/Silo.csproj", "src/Services/Silo/"]
+COPY ["src/Modules/Discord.Commands/Discord.Commands.csproj", "src/Modules/Discord.Commands/"]
+COPY ["src/Modules/GrainInterfaces/GrainInterfaces.csproj", "src/Modules/GrainInterfaces/"]
+COPY ["src/Modules/Discord.Shared/Discord.Shared.csproj", "src/Modules/Discord.Shared/"]
+COPY ["src/Modules/Wow.Shared/Wow.Shared.csproj", "src/Modules/Wow.Shared/"]
+COPY ["src/Modules/Core/Core.csproj", "src/Modules/Core/"]
+COPY ["src/Modules/Discord/Discord.csproj", "src/Modules/Discord/"]
+COPY ["src/Modules/Infrastructure/Infrastructure.csproj", "src/Modules/Infrastructure/"]
+COPY ["src/Modules/Grains/Grains.csproj", "src/Modules/Grains/"]
+COPY ["src/Modules/Wow/Wow.csproj", "src/Modules/Wow/"]
+COPY ["src/Modules/Streams/Streams.csproj", "src/Modules/Streams/"]
 RUN dotnet restore "src/Services/Silo/Silo.csproj"
 COPY . .
-WORKDIR "/src/Silo"
-RUN dotnet build "Silo.csproj" -c Release -o /app/build
+WORKDIR "/src/Services/Silo"
+RUN dotnet build -c Release -o /app/build
 
 FROM build AS publish
 RUN dotnet publish "Silo.csproj" -c Release -o /app/publish
@@ -23,5 +24,4 @@ RUN dotnet publish "Silo.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENV DOTNET_SiloType=All
 ENTRYPOINT ["dotnet", "Silo.dll"]

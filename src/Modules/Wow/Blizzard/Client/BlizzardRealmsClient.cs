@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using GrainInterfaces;
 using GrainInterfaces.Wow.Blizzard;
 using Microsoft.Extensions.Logging;
 
@@ -17,7 +18,7 @@ internal class BlizzardRealmsClient : IBlizzardRealmsClient
         _blizzardApi = blizzardApi;
         _logger      = logger;
 
-        _tokenGrain = new Lazy<IBlizzardTokenGrain>(() => clusterClient.GetGrain<IBlizzardTokenGrain>(""));
+        _tokenGrain = new Lazy<IBlizzardTokenGrain>(clusterClient.GetBlizzardTokenGrain);
     }
 
     private IBlizzardTokenGrain TokenGrain => _tokenGrain.Value;

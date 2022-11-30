@@ -22,25 +22,29 @@ public static class ApplicationHostExtensions
     public static HostApplicationBuilder UseOrleans(this HostApplicationBuilder builder, int siloPort, int gatewayPort,
                                                     string clusterId = "dev", string serviceId = "dev")
     {
+        builder.Logging.AddDebug();
         var configuration = builder.Configuration;
         builder.Services.AddOrleans(siloBuilder =>
         {
             var siloTypeName = configuration.GetValue<string>("SiloType");
             var siloType =
-                SiloTypes.Parse(siloTypeName ?? throw new InvalidOperationException("SiloType is not defined"));
+                SiloType.Parse(siloTypeName ?? throw new InvalidOperationException("SiloType is not defined"));
+
+            var maybeDiscordToken = configuration.GetValue<string>("DiscordToken");
 
             ISiloConfigurationStrategy strategy = builder.Environment.EnvironmentName switch
             {
-                "Development" => new LocalSiloConfigurationStrategy(siloPort, siloType, configuration),
+                "Development" =>
+                    new LocalSiloConfigurationStrategy(siloPort, siloType, discordToken: maybeDiscordToken),
                 "Mongo" => new MongoSiloConfigurationStrategy(siloPort, clusterId, serviceId,
                                                               configuration.GetConnectionString("MongoDB"), gatewayPort,
-                                                              siloType, configuration),
+                                                              siloType, maybeDiscordToken),
                 _ => new MongoSiloConfigurationStrategy(siloPort, clusterId, serviceId,
                                                         configuration.GetConnectionString("MongoDB"), gatewayPort,
-                                                        siloType, configuration)
+                                                        siloType, maybeDiscordToken)
             };
 
-            strategy.Apply(siloBuilder);
+            strategy.Apply(siloBuilder, builder.Configuration);
         });
 
         return builder;
@@ -66,10 +70,11 @@ public static class ApplicationHostExtensions
         return builder;
     }
 
-    public static void AddClusterClient(this IServiceCollection collection,  string         clusterId, string serviceId,
-                                        IHostEnvironment        environment, IConfiguration configuration)
+    public static IServiceCollection AddClusterClient(this IServiceCollection collection, string clusterId,
+                                                      string                  serviceId,
+                                                      IHostEnvironment        environment, IConfiguration configuration)
     {
-        collection.AddOrleansClient(clientBuilder =>
+        return collection.AddOrleansClient(clientBuilder =>
         {
             IClientConfigurationStrategy strategy = environment.EnvironmentName switch
             {

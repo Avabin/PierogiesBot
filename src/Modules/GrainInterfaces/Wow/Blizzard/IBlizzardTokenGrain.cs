@@ -2,5 +2,6 @@
 
 public interface IBlizzardTokenGrain : IGrainWithStringKey
 {
-    Task<string> GetTokenAsync();
+    public const string Id = "BlizzardToken";
+    Task<string>        GetTokenAsync();
 }

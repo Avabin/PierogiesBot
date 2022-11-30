@@ -1,28 +1,32 @@
 ﻿using System.Collections.Immutable;
 using Core;
+using GrainInterfaces;
+using GrainInterfaces.Discord.Guilds;
 using GrainInterfaces.Discord.Guilds.Events;
-using GrainInterfaces.Discord.Guilds.Grains;
 using GrainInterfaces.Discord.Guilds.MessageTriggers;
 using Grains.Core;
 using Orleans.Concurrency;
-using Orleans.Runtime;
 
 namespace Grains.Discord.Guilds;
 
-[ImplicitStreamSubscription(StreamNamespaces.MessagesWatcher)]
-public class GuildTriggersMessageWatcherGrain : EventingGrain<GuildReactionsState, MessageReceived>,
+[RegexImplicitStreamSubscription(StreamNamespaces.MessagesWatcher)]
+public class GuildTriggersMessageWatcherGrain : EventSubscriberGrain<GuildReactionsState, MessageReceived>,
                                                 IGuildTriggersMessageWatcherGrain
 {
+    private ulong _guildId;
+
     public async Task AddAsync(string name, MessageTrigger messageTrigger)
     {
         State = State.Add(name, messageTrigger);
         await WriteStateAsync();
+        await this.GetTriggersStream(_guildId).OnNextAsync(new TriggerCreated(messageTrigger));
     }
 
     public async Task RemoveAsync(string name)
     {
         State = State.Remove(name);
         await WriteStateAsync();
+        await this.GetTriggersStream(_guildId).OnNextAsync(new TriggerDeleted(name));
     }
 
     public async Task MuteChannelAsync(ulong channelId)
@@ -37,14 +41,28 @@ public class GuildTriggersMessageWatcherGrain : EventingGrain<GuildReactionsStat
         await WriteStateAsync();
     }
 
-    public Task<ImmutableList<MessageTrigger>> GetAllAsync()
+    public Task<ImmutableList<MessageTrigger>> GetAllAsync(int limit = 0)
     {
-        return Task.FromResult(State.Triggers.Value.Select(x => x.Value).ToImmutableList());
+        var messageTriggers            = State.Triggers.Value.Values.AsEnumerable();
+        if (limit > 0) messageTriggers = messageTriggers.Take(limit);
+        return Task.FromResult(messageTriggers.ToImmutableList());
+    }
+
+    public Task<bool> ContainsTriggerAsync(string name)
+    {
+        return Task.FromResult(State.Triggers.Value.ContainsKey(name));
+    }
+
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
+    {
+        var id = this.GetPrimaryKeyString();
+        _guildId = ulong.Parse(id);
+        await base.OnActivateAsync(cancellationToken);
     }
 
     protected override async Task RaiseAsync(MessageReceived @event)
     {
-        var matched = State.Triggers.Value.Where(x => x.Value.IsMatch(@event.Content)).ToList();
+        var matched = State.Match(@event.Content);
 
         if (!matched.Any()) return;
 
@@ -52,9 +70,7 @@ public class GuildTriggersMessageWatcherGrain : EventingGrain<GuildReactionsStat
                                           @event.ChannelId,
                                           @event.MessageId);
 
-        await this.GetStreamProvider(StreamProviders.RabbitMQ)
-                  .GetStream<RuleEvent>(StreamId.Create(StreamNamespaces.RuleHits, this.GetPrimaryKeyString()))
-                  .OnNextAsync(message);
+        await this.GetTriggersStream(_guildId).OnNextAsync(message);
     }
 }
 
@@ -94,5 +110,10 @@ public record GuildReactionsState([property: Id(0)] Immutable<Dictionary<string,
         if (!MutedChannels.Contains(channelId)) return this;
 
         return this with { MutedChannels = MutedChannels.Remove(channelId) };
+    }
+
+    public ImmutableList<KeyValuePair<string, MessageTrigger>> Match(string eventContent)
+    {
+        return Triggers.Value.Where(x => x.Value.IsMatch(eventContent)).ToImmutableList();
     }
 }

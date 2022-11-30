@@ -1,6 +1,6 @@
 ﻿namespace GrainInterfaces.Discord;
 
-public interface IDiscordMessagesWatcherGrain
+public interface IDiscordMessagesWatcherGrain : IGrainWithStringKey
 {
     public const string Id = "DiscordMessagesWatcher";
 

@@ -5,6 +5,7 @@ using System.Reactive.Subjects;
 using System.Reflection;
 using Core;
 using Discord.Interactions;
+using Discord.Shared;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -82,6 +83,7 @@ internal class DiscordService : IDiscordService
         {
             var service = new InteractionService(await _client!.Value);
             service.AddTypeConverter<TimeZoneInfo>(new TimeZoneInfoTypeReader());
+            service.AddTypeConverter<TimeOnly>(new TimeOnlyTypeConverter());
 
             return service;
         });
@@ -148,6 +150,29 @@ internal class DiscordService : IDiscordService
 
             activity?.Stop();
         };
+    }
+
+    public async Task InstallInteractionsAsync()
+    {
+        var assemblies = Settings.CommandsAssemblies.Select(x =>
+        {
+            try
+            {
+                return Assembly.Load(x);
+            }
+            catch (TypeLoadException e)
+            {
+                _logger.LogWarning(e, "Failed to load assembly {Assembly}", x);
+                return null;
+            }
+        }).Where(x => x is not null).ToList();
+        _logger.LogInformation("Loading {AssemblyCount} assemblies", assemblies.Count);
+
+        foreach (var assembly in assemblies)
+        {
+            _logger.LogDebug("Loading assembly {AssemblyName}", assembly!.FullName);
+            await InstallInteractionsAsync(assembly);
+        }
     }
 
     public async Task MuteUserAsync(ulong userId, ulong guildId, TimeSpan? duration = null)
@@ -235,6 +260,15 @@ internal class DiscordService : IDiscordService
         await thread.DeleteAsync();
     }
 
+    public async Task<List<DiscordEmoji>> GetEmojisAsync()
+    {
+        var client = await _client.Value;
+        var emojis = client.Guilds.SelectMany(x => x.Emotes).Select(x => new DiscordEmoji(x.Name, x.ToString(), x.Id))
+                           .ToList();
+
+        return emojis;
+    }
+
     public IObservable<IMessage> MessagesObservable => _messageSubject.AsObservable();
 
     public async Task StartAsync()
@@ -244,17 +278,20 @@ internal class DiscordService : IDiscordService
 
     public async Task StopAsync()
     {
-        var client = await _client.Value;
-        if (client.ConnectionState is ConnectionState.Disconnected or ConnectionState.Disconnecting) return;
-        _logger.LogInformation("Stopping Discord");
-        client.MessageReceived -= OnMessageReceivedAsync;
-        _messageSubject.OnCompleted();
-        _subscription?.Dispose();
-        _subscription = null;
-        await client.LogoutAsync();
-        await client.StopAsync();
+        if (_client.IsValueCreated)
+        {
+            var client = await _client.Value;
+            if (client.ConnectionState is ConnectionState.Disconnected or ConnectionState.Disconnecting) return;
+            _logger.LogInformation("Stopping Discord");
+            client.MessageReceived -= OnMessageReceivedAsync;
+            _messageSubject.OnCompleted();
+            _subscription?.Dispose();
+            _subscription = null;
+            await client.LogoutAsync();
+            await client.StopAsync();
 
-        _logger.LogInformation("Discord stopped");
+            _logger.LogInformation("Discord stopped");
+        }
     }
 
     public async Task AddReactionAsync(ulong channelId, ulong messageId, string emoteName)
@@ -275,18 +312,21 @@ internal class DiscordService : IDiscordService
             throw new ArgumentException($"Message with id {messageId} not found");
         }
 
-        if (channel is SocketGuildChannel guildChannel)
-        {
-            var emote =
-                guildChannel.Guild.Emotes.FirstOrDefault(emote =>
-                                                             emote.Name.Equals(emoteName,
-                                                                               StringComparison
-                                                                                  .InvariantCultureIgnoreCase));
-            if (emote is null)
-                throw new ArgumentException($"Emote with name {emoteName} not found");
+        var emote = client.Guilds.SelectMany(x => x.Emotes.Where(y => y.Name.Equals(emoteName))).FirstOrDefault();
 
-            await message.AddReactionAsync(emote);
+        if (emote is null) // emote not found, try to use emoji
+        {
+            if (!Emoji.TryParse($":{emoteName}:", out var emoji))
+            {
+                _logger.LogError("AddReactionAsync: Emote/emoji {EmoteName} not found", emoteName);
+                throw new ArgumentException($"Emote with name {emoteName} not found");
+            }
+
+            await message.AddReactionAsync(emoji);
+            return;
         }
+
+        await message.AddReactionAsync(emote);
     }
 
     public async Task<ulong> GetChannelGuildIdAsync(ulong channelId)
@@ -299,7 +339,7 @@ internal class DiscordService : IDiscordService
         throw new InvalidOperationException("Channel is not a guild channel");
     }
 
-    public async Task<IReadOnlyCollection<ulong>> GetGuildsAsync()
+    public async Task<IReadOnlyCollection<(ulong id, string name)>> GetGuildsAsync()
     {
         var client = await _client.Value;
         var guilds = client.Guilds;
@@ -310,7 +350,7 @@ internal class DiscordService : IDiscordService
             throw new InvalidOperationException("No guilds found");
         }
 
-        return guilds.Select(x => x.Id).ToImmutableList();
+        return guilds.Select(x => (x.Id, x.Name)).ToImmutableList();
     }
 
     public async Task SendMessageAsync(ulong channelId, string message)
