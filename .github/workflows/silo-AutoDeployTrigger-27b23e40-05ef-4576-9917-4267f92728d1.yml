@@ -7,7 +7,7 @@ on:
     branches: 
       [ main ]
     paths:
-    - 'Services/Silo/**'
+    - 'src/**'
     - '.github/workflows/silo-AutoDeployTrigger-27b23e40-05ef-4576-9917-4267f92728d1.yml'
 
   # Allow mannually trigger 
@@ -36,8 +36,8 @@ jobs:
         with:
           push: true
           tags: ghcr.io/ghcr.io/avabin/pierogiesbot/silo:${{ github.sha }}
-          file: Services/Silo/Dockerfile
-          context: Services/Silo/
+          file: src/Services/Silo/Dockerfile
+          context: .
 
 
   deploy:

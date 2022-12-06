@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <PackageId>PierogiesBot.Shared</PackageId>
+        <Version>1.0.1</Version>
+        <Authors>Avabin</Authors>
+        <TargetFramework>net7.0</TargetFramework>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageOutputPath>F:\nuget</PackageOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Orleans.Sdk" Version="7.0.0"/>
+        <PackageReference Include="Microsoft.Orleans.Serialization.Abstractions" Version="7.0.0"/>
+    </ItemGroup>
+
+</Project>
