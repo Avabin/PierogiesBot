@@ -12,15 +12,14 @@ public static class ApplicationHostExtensions
 {
     public static HostApplicationBuilder AddSeq(this HostApplicationBuilder builder)
     {
-        var seqOptions = builder.Configuration.GetRequiredSection("Seq");
-
-        builder.Services.AddLogging(b => b.AddSeq(seqOptions));
+        var seqOptions = builder.Configuration.GetSection("Seq");
+        if (seqOptions.Exists()) builder.Services.AddLogging(loggingBuilder => { loggingBuilder.AddSeq(seqOptions); });
 
         return builder;
     }
 
     public static HostApplicationBuilder UseOrleans(this HostApplicationBuilder builder, int siloPort, int gatewayPort,
-                                                    string clusterId = "dev", string serviceId = "dev")
+        string clusterId = "dev", string serviceId = "dev")
     {
         builder.Logging.AddDebug();
         var configuration = builder.Configuration;
@@ -38,11 +37,12 @@ public static class ApplicationHostExtensions
                 "Development" =>
                     new LocalSiloConfigurationStrategy(siloPort, siloType, discordToken: maybeDiscordToken),
                 "Mongo" => new MongoSiloConfigurationStrategy(siloPort, clusterId, serviceId,
-                                                              configuration.GetConnectionString("MongoDB"), gatewayPort,
-                                                              siloType, maybeDiscordToken),
+                    configuration.GetConnectionString("MongoDB"), gatewayPort,
+                    siloType, maybeDiscordToken),
+                "Azure" => new AzureSiloConfigurationStrategy(siloType, clusterId, serviceId),
                 _ => new MongoSiloConfigurationStrategy(siloPort, clusterId, serviceId,
-                                                        configuration.GetConnectionString("MongoDB"), gatewayPort,
-                                                        siloType, maybeDiscordToken)
+                    configuration.GetConnectionString("MongoDB"), gatewayPort,
+                    siloType, maybeDiscordToken)
             };
 
             strategy.Apply(siloBuilder, builder.Configuration);
@@ -52,16 +52,16 @@ public static class ApplicationHostExtensions
     }
 
     public static HostApplicationBuilder AddClusterClient(this HostApplicationBuilder builder, string clusterId = "dev",
-                                                          string                      serviceId = "dev")
+        string serviceId = "dev")
     {
         builder.Services.AddClusterClient(clusterId, serviceId, builder.Environment, builder.Configuration);
 
         return builder;
     }
 
-    public static IHostBuilder AddClusterClient(this IHostBuilder builder,       IHostEnvironment environment,
-                                                IConfiguration    configuration, string           clusterId = "dev",
-                                                string            serviceId = "dev")
+    public static IHostBuilder AddClusterClient(this IHostBuilder builder, IHostEnvironment environment,
+        IConfiguration configuration, string clusterId = "dev",
+        string serviceId = "dev")
     {
         builder.ConfigureServices((context, collection) =>
         {
@@ -72,8 +72,8 @@ public static class ApplicationHostExtensions
     }
 
     public static IServiceCollection AddClusterClient(this IServiceCollection collection, string clusterId,
-                                                      string                  serviceId,
-                                                      IHostEnvironment        environment, IConfiguration configuration)
+        string serviceId,
+        IHostEnvironment environment, IConfiguration configuration)
     {
         return collection.AddOrleansClient(clientBuilder =>
         {
@@ -81,7 +81,9 @@ public static class ApplicationHostExtensions
             {
                 "Development" => new LocalClientConfigurationStrategy(),
                 "Mongo" => new MongoClientConfigurationStrategy(clusterId, serviceId,
-                                                                configuration.GetConnectionString("MongoDB")),
+                    configuration.GetConnectionString("MongoDB")),
+                "Azure" => new AzureClientConfigurationStrategy(clusterId, serviceId,
+                    configuration.GetConnectionString("AzureStorage")),
                 _ => new LocalClientConfigurationStrategy()
             };
 
