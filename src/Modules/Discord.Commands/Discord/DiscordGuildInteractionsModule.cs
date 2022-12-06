@@ -20,7 +20,7 @@ public class DiscordGuildInteractionsModule : GrainedInteractionModuleBase
         var guilds = await grain.GetGuildsAsync();
 
         var embed = new EmbedBuilder()
-           .WithTitle("Guilds");
+            .WithTitle("Guilds");
 
         foreach (var guild in guilds) embed.AddField(guild.Name, guild.Id.ToString(), true);
 
@@ -37,5 +37,16 @@ public class DiscordGuildInteractionsModule : GrainedInteractionModuleBase
         await stream.OnNextAsync(message);
 
         await RespondAsync("Timezone set");
+    }
+
+
+    [SlashCommand("get_timezone", "Gets the timezone for the guild")]
+    public async Task GetTimezone()
+    {
+        var grain = Client.GetDiscordGuildGrain(Context.Guild.Id);
+
+        var timezone = await grain.GetTimezoneAsync();
+
+        await RespondAsync($"Timezone is {timezone}");
     }
 }

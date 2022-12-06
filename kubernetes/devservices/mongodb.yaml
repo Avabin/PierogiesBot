@@ -1,0 +1,80 @@
+﻿# mongodb deployed as single instance (Deployment) with 1 replica (replicas: 1)
+# mongodb service is exposed as ClusterIP (type: ClusterIP)
+# uses 1GB of RAM, 1 core and 1 GB of disk storage (resources: limits: cpu: 1, memory: 1Gi, requests: cpu: 1, memory: 1Gi, storage: 1Gi)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: ap
+  labels:
+    app: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 27017
+              name: mongodb
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 512Mi
+            limits:
+              cpu: "1000m"
+              memory: 1Gi
+          volumeMounts:
+            - name: mongodb-persistent-storage
+              mountPath: /data/db
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: silo-secrets
+                  key: mongodb-user
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: silo-secrets
+                  key: mongodb-pass
+      volumes:
+        - name: mongodb-persistent-storage
+          persistentVolumeClaim:
+            claimName: mongodb-persistent-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: ap
+  labels:
+    app: mongodb
+spec:
+  type: ClusterIP
+  ports:
+    - port: 27017
+      targetPort: 27017
+      protocol: TCP
+  selector:
+    app: mongodb
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-persistent-storage
+  namespace: ap
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

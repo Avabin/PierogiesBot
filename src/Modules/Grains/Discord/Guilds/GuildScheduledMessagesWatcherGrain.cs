@@ -65,6 +65,15 @@ public class GuildScheduledMessagesWatcherGrain :
             _ => Task.CompletedTask
         });
 
+        if (scheduledMessage is null)
+        {
+            _logger.LogWarning(
+                "Received reminder '{ReminderName}' for guild {GuildId} but no scheduled message was found",
+                reminderName, _guildId);
+
+            return;
+        }
+
         if (scheduledMessage is not IRecurringScheduledMessage)
         {
             _logger.LogInformation("Message '{ReminderName}' is not recurring, removing", reminderName);
@@ -163,9 +172,9 @@ public record GuildScheduledMessagesWatcherGrainState(
         return this with { ScheduledMessages = dict.AsImmutable() };
     }
 
-    public ScheduledMessage GetByName(string reminderName)
+    public ScheduledMessage? GetByName(string reminderName)
     {
-        return ScheduledMessages.Value[reminderName];
+        return ScheduledMessages.Value.TryGetValue(reminderName, out var message) ? message : null;
     }
 
     public bool Contains(string name)

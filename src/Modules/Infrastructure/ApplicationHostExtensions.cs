@@ -1,10 +1,8 @@
-﻿using Infrastructure.Configuration;
+﻿using Azure.Monitor.OpenTelemetry.Exporter;
+using Infrastructure.Configuration;
 using Infrastructure.Configuration.ClientStrategies;
 using Infrastructure.Configuration.SiloStrategies;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using OpenTelemetry.Logs;
 
 namespace Infrastructure;
 
@@ -18,14 +16,84 @@ public static class ApplicationHostExtensions
         return builder;
     }
 
+    public static WebApplicationBuilder UseOrleans(this WebApplicationBuilder builder, int siloPort, int gatewayPort,
+        string clusterId = "dev", string serviceId = "dev")
+    {
+        builder.Configuration.AddEnvironmentVariables("DOTNET_");
+        builder.Configuration.AddEnvironmentVariables("ASPNETCORE_");
+        var configuration = builder.Configuration;
+        var appInsightsConnectionString = builder.Configuration.GetConnectionString("ApplicationInsights");
+        if (appInsightsConnectionString is not (null or ""))
+            builder.Services.AddApplicationInsightsTelemetry(options =>
+            {
+                options.ConnectionString = appInsightsConnectionString;
+            });
+        builder.Host.UseOrleans((context, siloBuilder) =>
+        {
+            siloBuilder.AddActivityPropagation();
+            if (appInsightsConnectionString is not (null or ""))
+                siloBuilder.Configure<OpenTelemetryLoggerOptions>(options =>
+                {
+                    options.IncludeScopes = true;
+                    options.AddAzureMonitorLogExporter(exporterOptions =>
+                    {
+                        exporterOptions.ConnectionString = appInsightsConnectionString;
+                    });
+                });
+            var siloTypeName = configuration.GetValue<string>("SiloType");
+            var siloType =
+                SiloType.Parse(siloTypeName ?? throw new InvalidOperationException("SiloType is not defined"));
+
+            var maybeDiscordToken = configuration.GetValue<string>("DiscordToken");
+
+            ISiloConfigurationStrategy strategy = builder.Environment.EnvironmentName switch
+            {
+                "Development" =>
+                    new LocalSiloConfigurationStrategy(siloPort, siloType, discordToken: maybeDiscordToken),
+                "Mongo" => new MongoSiloConfigurationStrategy(siloPort, clusterId, serviceId,
+                    configuration.GetConnectionString("MongoDB"), gatewayPort,
+                    siloType, maybeDiscordToken),
+                "Azure" => new AzureSiloConfigurationStrategy(siloType, clusterId, serviceId),
+                _ => new MongoSiloConfigurationStrategy(siloPort, clusterId, serviceId,
+                    configuration.GetConnectionString("MongoDB"), gatewayPort,
+                    siloType, maybeDiscordToken)
+            };
+
+            strategy.Apply(siloBuilder, builder.Configuration);
+        });
+        return builder;
+    }
+
     public static HostApplicationBuilder UseOrleans(this HostApplicationBuilder builder, int siloPort, int gatewayPort,
         string clusterId = "dev", string serviceId = "dev")
     {
-        builder.Logging.AddDebug();
         var configuration = builder.Configuration;
+        var appInsightsConnectionString = configuration.GetConnectionString("ApplicationInsights");
+        if (appInsightsConnectionString is not (null or ""))
+        {
+            builder.Services.AddApplicationInsightsTelemetry(options =>
+            {
+                options.ConnectionString = appInsightsConnectionString;
+            });
+            builder.Logging.AddDebug().AddApplicationInsights(options =>
+            {
+                options.IncludeScopes = true;
+                options.TrackExceptionsAsExceptionTelemetry = true;
+            });
+        }
+
         builder.Services.AddOrleans(siloBuilder =>
         {
             siloBuilder.AddActivityPropagation();
+            if (appInsightsConnectionString is not (null or ""))
+                siloBuilder.Configure<OpenTelemetryLoggerOptions>(options =>
+                {
+                    options.IncludeScopes = true;
+                    options.AddAzureMonitorLogExporter(exporterOptions =>
+                    {
+                        exporterOptions.ConnectionString = appInsightsConnectionString;
+                    });
+                });
             var siloTypeName = configuration.GetValue<string>("SiloType");
             var siloType =
                 SiloType.Parse(siloTypeName ?? throw new InvalidOperationException("SiloType is not defined"));
@@ -83,7 +151,8 @@ public static class ApplicationHostExtensions
                 "Mongo" => new MongoClientConfigurationStrategy(clusterId, serviceId,
                     configuration.GetConnectionString("MongoDB")),
                 "Azure" => new AzureClientConfigurationStrategy(clusterId, serviceId,
-                    configuration.GetConnectionString("AzureStorage")),
+                    configuration.GetConnectionString("AzureStorage"),
+                    configuration.GetRequiredSection("RabbitMQSettings")),
                 _ => new LocalClientConfigurationStrategy()
             };
 

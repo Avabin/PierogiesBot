@@ -7,7 +7,8 @@ on:
     branches: 
       [ main ]
     paths:
-    - 'src/**'
+    - 'src/Modules/**{cs,csproj}'
+    - 'src/Services/Silo/**{cs,csproj}'
     - '.github/workflows/silo-AutoDeployTrigger-27b23e40-05ef-4576-9917-4267f92728d1.yml'
 
   # Allow mannually trigger 
@@ -35,26 +36,10 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ghcr.io/ghcr.io/avabin/pierogiesbot/silo:${{ github.sha }}
+          # tag as commit hash and as branch name
+          tags: |
+            ghcr.io/ghcr.io/avabin/pierogiesbot/silo:${{ github.sha }}
+            ghcr.io/ghcr.io/avabin/pierogiesbot/silo:${{ github.ref_name }}
           file: src/Services/Silo/Dockerfile
           context: .
 
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    
-    steps:
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.SILO_AZURE_CREDENTIALS }}
-
-
-      - name: Deploy to containerapp
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az config set extension.use_dynamic_install=yes_without_prompt
-            az containerapp registry set -n silo -g k8s --server ghcr.io --username  ${{ secrets.SILO_REGISTRY_USERNAME }} --password ${{ secrets.SILO_REGISTRY_PASSWORD }}
-            az containerapp update -n silo -g k8s --image ghcr.io/ghcr.io/avabin/pierogiesbot/silo:${{ github.sha }}

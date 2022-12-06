@@ -7,7 +7,8 @@ on:
     branches: 
       [ main ]
     paths:
-    - 'src/Services/WebApi/**'
+    - 'src/Modules/**{cs,csproj}'
+    - 'src/Services/WebApi/**{cs,csproj}'
     - '.github/workflows/webapi-AutoDeployTrigger-2990ff6a-2386-414b-acd0-aa1a011cf2a7.yml'
 
   # Allow mannually trigger 
@@ -35,26 +36,9 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ghcr.io/ghcr.io/avabin/pierogiesbot/webapi:${{ github.sha }}
+          # tag as commit hash and as branch name
+          tags: |
+            ghcr.io/ghcr.io/avabin/pierogiesbot/webapi:${{ github.sha }}
+            ghcr.io/ghcr.io/avabin/pierogiesbot/webapi:${{ github.ref_name }}
           file: src/Services/WebApi/Dockerfile
-          context: src/Services/WebApi/
-
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    
-    steps:
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.WEBAPI_AZURE_CREDENTIALS }}
-
-
-      - name: Deploy to containerapp
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az config set extension.use_dynamic_install=yes_without_prompt
-            az containerapp registry set -n webapi -g k8s --server ghcr.io --username  ${{ secrets.WEBAPI_REGISTRY_USERNAME }} --password ${{ secrets.WEBAPI_REGISTRY_PASSWORD }}
-            az containerapp update -n webapi -g k8s --image ghcr.io/ghcr.io/avabin/pierogiesbot/webapi:${{ github.sha }}
+          context: .

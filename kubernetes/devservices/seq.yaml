@@ -1,0 +1,79 @@
+﻿# single instance deployment of seq using 1 core at max, max 1GB of RAM, max 8GB of storage, with a ClusterIP service for both ingestion and UI
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seq
+  namespace: ap
+  labels:
+    app: seq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seq
+  template:
+    metadata:
+      labels:
+        app: seq
+    spec:
+      containers:
+        - name: seq
+          image: datalust/seq:latest
+          imagePullPolicy: Always
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+          ports:
+            - containerPort: 5341
+              name: seq-ingestion
+            - containerPort: 80
+              name: seq-ui
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 512Mi
+            limits:
+              cpu: "1000m"
+              memory: 1Gi
+          volumeMounts:
+            - name: seq-persistent-storage
+              mountPath: /data
+      volumes:
+        - name: seq-persistent-storage
+          persistentVolumeClaim:
+            claimName: seq-persistent-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: ap
+  name: seq
+  labels:
+    app: seq
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5341
+      name: seq-ingestion
+      targetPort: 5341
+      protocol: TCP
+    - port: 80
+      name: seq-ui
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: seq
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seq-persistent-storage
+  namespace: ap
+  labels:
+    app: seq
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
