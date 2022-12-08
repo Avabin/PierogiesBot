@@ -7,9 +7,9 @@ on:
     branches: 
       [ main ]
     paths:
-    - 'src/Modules/**{cs,csproj}'
-    - 'src/Services/WebApi/**{cs,csproj}'
-    - '.github/workflows/webapi-AutoDeployTrigger-2990ff6a-2386-414b-acd0-aa1a011cf2a7.yml'
+      - 'src/Modules/**{cs,csproj}'
+      - 'src/Services/WebApi/**{cs,json,csproj}'
+      - '.github/workflows/webapi-AutoDeployTrigger-2990ff6a-2386-414b-acd0-aa1a011cf2a7.yml'
 
   # Allow mannually trigger 
   workflow_dispatch:      
