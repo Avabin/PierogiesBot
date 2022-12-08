@@ -104,6 +104,8 @@ spec:
               memory: "512Mi"
               cpu: "500m"
       terminationGracePeriodSeconds: 120
+      imagePullSecrets:
+        - name: ghcr
   minReadySeconds: 60
   strategy:
     rollingUpdate:
