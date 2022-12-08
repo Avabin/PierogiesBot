@@ -35,4 +35,4 @@ jobs:
           name: Api Tests
           # Coma separated list of paths to test results
           path: "**/*.trx"
-          reporter: all
+          reporter: dotnet-trx
