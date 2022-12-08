@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Newtonsoft.Json;
 using RestEase;
 using Shared;
@@ -38,7 +38,7 @@ public class Tests
 
         // Assert
         actual.Should().BeEquivalentTo(expected);
-
+        
         // Cleanup
         await _pierogiesBotApi.DeleteMessageTriggerAsync(guildId, expected.Name);
     }
