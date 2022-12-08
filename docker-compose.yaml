@@ -33,9 +33,6 @@
     depends_on:
       - mongodb
       - rabbitmq
-    ports:
-      - 11111:11111
-      - 30000:30000
     expose:
       - 11111
       - 30000
@@ -53,6 +50,30 @@
       - DOTNET_RabbitMQSettings__Port=5672
       - DOTNET_RabbitMQSettings__UserName=guest
       - DOTNET_RabbitMQSettings__Password=guest
+  webapi:
+    image: ghcr.io/avabin/pierogiesbot/webapi:latest
+    build:
+      dockerfile: src/Services/WebApi/Dockerfile
+      context: .
+    container_name: webapi
+    entrypoint: [ "dotnet", "WebApi.dll" ]
+    depends_on:
+      - all-silo
+    ports:
+      - 5000:5000
+    expose:
+      - 5000
+    networks:
+      - backend
+    environment:
+      - DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:5000
+      - ASPNETCORE_ConnectionStrings__MongoDB=mongodb://mongodb:27017
+      - ASPNETCORE_RabbitMQSettings__Host=rabbitmq
+      - ASPNETCORE_RabbitMQSettings__Port=5672
+      - ASPNETCORE_RabbitMQSettings__UserName=guest
+      - ASPNETCORE_RabbitMQSettings__Password=guest
 networks:
   backend:
     driver: bridge
