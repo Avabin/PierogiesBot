@@ -5,19 +5,15 @@ metadata:
   namespace: ap
   labels:
     app: webapi
-    orleans/serviceId: webapi
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: webapi
-      orleans/serviceId: webapi
   template:
     metadata:
       labels:
         app: webapi
-        orleans/serviceId: webapi
-        orleans/clusterId: PierogiesBot
     spec:
       containers:
         - name: webapi
@@ -31,14 +27,6 @@ spec:
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: "Kubernetes"
-            - name: ORLEANS_SERVICE_ID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['orleans/serviceId']
-            - name: ORLEANS_CLUSTER_ID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['orleans/clusterId']
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -51,8 +39,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: ASPNETCORE_SHUTDOWNTIMEOUTSECONDS
-              value: "120"
             - name: ASPNETCORE_RabbitMQSettings__Host
               value: "rabbitmq"
             - name: ASPNETCORE_RabbitMQSettings__UserName

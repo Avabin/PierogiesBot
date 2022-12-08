@@ -15,6 +15,14 @@ public class DiscordGuildInteractionsModule : GrainedInteractionModuleBase
     [SlashCommand("list", "Lists all guilds")]
     public async Task ListGuilds()
     {
+        // return if not owner of the bot
+        const ulong ownerId = 180791794638782465;
+        if (Context.User.Id != ownerId)
+        {
+            await ReplyAsync("You are not my dad!");
+            return;
+        }
+
         var grain = Client.GetDiscordGuildsGrain();
 
         var guilds = await grain.GetGuildsAsync();
