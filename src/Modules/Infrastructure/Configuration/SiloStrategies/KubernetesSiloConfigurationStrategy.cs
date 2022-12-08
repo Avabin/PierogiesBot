@@ -1,5 +1,4 @@
 ﻿using Core;
-using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
 using Orleans.Streams;
 using Streams;
@@ -29,15 +28,11 @@ public class KubernetesSiloConfigurationStrategy : SiloConfigurationStrategyBase
 
     public override void Apply(ISiloBuilder builder, IConfiguration configuration)
     {
+        builder.UseKubernetesHosting();
         builder.Services.AddOptions().Configure<RabbitMQSettings>(configuration.GetSection("RabbitMQSettings"));
         builder.Services.AddTransient<RabbitMQQueueAdapterFactory>();
         builder.AddStreaming().AddPersistentStreams(StreamProviders.Default, AdapterFactory, ConfigureStream);
         builder.ConfigureEndpoints(_siloPort, _gatewayPort, listenOnAnyHostAddress: true);
-        builder.Configure<ClusterOptions>(x =>
-        {
-            x.ClusterId = _clusterId;
-            x.ServiceId = _serviceId;
-        });
         builder.UseMongoDBClient(_connectionString);
         builder.UseMongoDBClustering(options =>
         {

@@ -16,6 +16,7 @@
         <PackageReference Include="Microsoft.Orleans.Clustering.AzureStorage" Version="7.0.0"/>
         <PackageReference Include="Microsoft.Orleans.EventSourcing" Version="7.0.0"/>
         <PackageReference Include="Microsoft.Orleans.Hosting.AzureCloudServices" Version="7.0.0"/>
+        <PackageReference Include="Microsoft.Orleans.Hosting.Kubernetes" Version="7.0.0"/>
         <PackageReference Include="Microsoft.Orleans.Persistence.AzureStorage" Version="7.0.0"/>
         <PackageReference Include="Microsoft.Orleans.Reminders.AzureStorage" Version="7.0.0"/>
         <PackageReference Include="Microsoft.Orleans.Serialization.NewtonsoftJson" Version="7.0.0"/>
