@@ -3,22 +3,39 @@ using Infrastructure.Configuration;
 using Infrastructure.Configuration.ClientStrategies;
 using Infrastructure.Configuration.SiloStrategies;
 using OpenTelemetry.Logs;
+using Serilog;
+using Serilog.Events;
 
 namespace Infrastructure;
 
 public static class ApplicationHostExtensions
 {
-    public static HostApplicationBuilder AddSeq(this HostApplicationBuilder builder)
-    {
-        var seqOptions = builder.Configuration.GetSection("Seq");
-        if (seqOptions.Exists()) builder.Services.AddLogging(loggingBuilder => { loggingBuilder.AddSeq(seqOptions); });
-
-        return builder;
-    }
-
     public static WebApplicationBuilder UseOrleans(this WebApplicationBuilder builder, int siloPort, int gatewayPort,
         string clusterId = "dev", string serviceId = "dev")
     {
+        var seqUrl = builder.Configuration.GetValue<string>("Seq:ServerUrl");
+        if (seqUrl is not ("" or null))
+        {
+            var logger = new LoggerConfiguration()
+                .Filter.ByExcluding(@event =>
+                    @event.Properties["SourceContext"].ToString().Replace("\"", "").StartsWith("Microsoft"))
+                .Filter.ByExcluding(@event =>
+                    @event.Properties["SourceContext"].ToString().Replace("\"", "").StartsWith("Orleans") &&
+                    @event.Level < LogEventLevel.Information)
+                .Enrich.FromLogContext()
+                .Enrich.WithMachineName()
+                .Enrich.WithEnvironmentName()
+                .MinimumLevel.Verbose().WriteTo.Console()
+                .MinimumLevel.Debug().WriteTo.Seq(seqUrl)
+                .CreateLogger();
+
+            builder.Logging.ClearProviders().AddSerilog(logger);
+        }
+        else
+        {
+            builder.Logging.AddConsole();
+        }
+
         builder.Configuration.AddEnvironmentVariables("DOTNET_");
         builder.Configuration.AddEnvironmentVariables("ASPNETCORE_");
         var configuration = builder.Configuration;
@@ -71,32 +88,10 @@ public static class ApplicationHostExtensions
         string clusterId = "dev", string serviceId = "dev")
     {
         var configuration = builder.Configuration;
-        var appInsightsConnectionString = configuration.GetConnectionString("ApplicationInsights");
-        if (appInsightsConnectionString is not (null or ""))
-        {
-            builder.Services.AddApplicationInsightsTelemetry(options =>
-            {
-                options.ConnectionString = appInsightsConnectionString;
-            });
-            builder.Logging.AddDebug().AddApplicationInsights(options =>
-            {
-                options.IncludeScopes = true;
-                options.TrackExceptionsAsExceptionTelemetry = true;
-            });
-        }
 
         builder.Services.AddOrleans(siloBuilder =>
         {
             siloBuilder.AddActivityPropagation();
-            if (appInsightsConnectionString is not (null or ""))
-                siloBuilder.Configure<OpenTelemetryLoggerOptions>(options =>
-                {
-                    options.IncludeScopes = true;
-                    options.AddAzureMonitorLogExporter(exporterOptions =>
-                    {
-                        exporterOptions.ConnectionString = appInsightsConnectionString;
-                    });
-                });
             var siloTypeName = configuration.GetValue<string>("SiloType");
             var siloType =
                 SiloType.Parse(siloTypeName ?? throw new InvalidOperationException("SiloType is not defined"));

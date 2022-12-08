@@ -10,7 +10,6 @@ using Wow;
 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en");
 var builder = WebApplication.CreateBuilder(args);
 // .UseOrleans(11111, 30000, "PierogiesBot", "Silo")
-// .AddSeq();
 builder.UseOrleans(11111, 30000, "PierogiesBot", "Silo");
 builder.Services.AddWowServices(builder.Configuration.GetRequiredSection("Blizzard"));
 builder.Services.AddDiscordCommands(builder.Configuration.GetRequiredSection("Discord"));

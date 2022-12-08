@@ -2,7 +2,6 @@
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
 using Orleans.Streams;
-using Serilog;
 using Streams;
 
 namespace Infrastructure.Configuration.SiloStrategies;
@@ -30,7 +29,6 @@ public class KubernetesSiloConfigurationStrategy : SiloConfigurationStrategyBase
 
     public override void Apply(ISiloBuilder builder, IConfiguration configuration)
     {
-        builder.ConfigureLogging(loggingBuilder => { loggingBuilder.AddSerilog(); });
         builder.Services.AddOptions().Configure<RabbitMQSettings>(configuration.GetSection("RabbitMQSettings"));
         builder.Services.AddTransient<RabbitMQQueueAdapterFactory>();
         builder.AddStreaming().AddPersistentStreams(StreamProviders.Default, AdapterFactory, ConfigureStream);
