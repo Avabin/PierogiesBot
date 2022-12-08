@@ -13,7 +13,7 @@ namespace GrainInterfaces;
 public static class GrainFactoryExtensions
 {
     public static IWowCharacterGrain GetWowCharacterGrain(this IGrainFactory grainFactory, string server, string realm,
-                                                          string             name)
+        string name)
     {
         var key = new WowCharacterKey(server, realm, name);
         return grainFactory.GetGrain<IWowCharacterGrain>(key);
@@ -61,68 +61,73 @@ public static class GrainFactoryExtensions
         return grainFactory.GetGrain<IGuildScheduledMessagesWatcherGrain>(guildId.ToString("D"));
     }
 
+    public static IDiscordInteractionsGrain GetDiscordInteractionsGrain(this IGrainFactory grainFactory)
+    {
+        return grainFactory.GetGrain<IDiscordInteractionsGrain>(IDiscordInteractionsGrain.Key);
+    }
+
     public static IAsyncStream<DiscordUserEvent> GetDiscordUserStream(this IClusterClient client, ulong userId,
-                                                                      string?             streamProvider = null)
+        string? streamProvider = null)
     {
         return client.GetStreamProvider(streamProvider ?? StreamProviders.Default)
-                     .GetStream<DiscordUserEvent>(StreamId.Create(StreamNamespaces.ForDiscordUser(userId),
-                                                                  userId.ToString("d")));
+            .GetStream<DiscordUserEvent>(StreamId.Create(StreamNamespaces.ForDiscordUser(userId),
+                userId.ToString("d")));
     }
 
     public static IAsyncStream<DiscordGuildEvent> GetDiscordGuildStream(this IClusterClient client, ulong guildId,
-                                                                        string?             streamProvider = null)
+        string? streamProvider = null)
     {
         return client.GetStreamProvider(streamProvider ?? StreamProviders.Default)
-                     .GetStream<DiscordGuildEvent>(StreamId.Create(StreamNamespaces.ForDiscordGuild(guildId),
-                                                                   guildId.ToString("d")));
+            .GetStream<DiscordGuildEvent>(StreamId.Create(StreamNamespaces.ForDiscordGuild(guildId),
+                guildId.ToString("d")));
     }
 
     public static IAsyncStream<MessagesWatcherEvent> GetMessagesWatcherStream(
         this IClusterClient grain, ulong guildId, string? streamProvider = null)
     {
         return grain.GetStreamProvider(streamProvider ?? StreamProviders.Default)
-                    .GetStream<MessagesWatcherEvent>(StreamId.Create(StreamNamespaces.ForMessagesWatcher(guildId),
-                                                                     guildId.ToString("D")));
+            .GetStream<MessagesWatcherEvent>(StreamId.Create(StreamNamespaces.ForMessagesWatcher(guildId),
+                guildId.ToString("D")));
     }
 
     public static IAsyncStream<TriggerEvent> GetTriggersStream(this IClusterClient client, ulong guildId,
-                                                               string?             streamProvider = null)
+        string? streamProvider = null)
     {
         return client.GetStreamProvider(streamProvider ?? StreamProviders.Default)
-                     .GetStream<TriggerEvent>(StreamId.Create(StreamNamespaces.ForTriggers(guildId),
-                                                              guildId.ToString("d")));
+            .GetStream<TriggerEvent>(StreamId.Create(StreamNamespaces.ForTriggers(guildId),
+                guildId.ToString("d")));
     }
 
 
     public static IAsyncStream<DiscordUserEvent> GetDiscordUserStream(this Grain grain, ulong userId,
-                                                                      string?    streamProvider = null)
+        string? streamProvider = null)
     {
         return grain.GetStreamProvider(streamProvider ?? StreamProviders.Default)
-                    .GetStream<DiscordUserEvent>(StreamId.Create(StreamNamespaces.ForDiscordUser(userId),
-                                                                 userId.ToString("d")));
+            .GetStream<DiscordUserEvent>(StreamId.Create(StreamNamespaces.ForDiscordUser(userId),
+                userId.ToString("d")));
     }
 
     public static IAsyncStream<DiscordGuildEvent> GetDiscordGuildStream(this Grain grain, ulong guildId,
-                                                                        string?    streamProvider = null)
+        string? streamProvider = null)
     {
         return grain.GetStreamProvider(streamProvider ?? StreamProviders.Default)
-                    .GetStream<DiscordGuildEvent>(StreamId.Create(StreamNamespaces.ForDiscordGuild(guildId),
-                                                                  guildId.ToString("d")));
+            .GetStream<DiscordGuildEvent>(StreamId.Create(StreamNamespaces.ForDiscordGuild(guildId),
+                guildId.ToString("d")));
     }
 
     public static IAsyncStream<MessagesWatcherEvent> GetMessagesWatcherStream(
         this Grain grain, ulong guildId, string? streamProvider = null)
     {
         return grain.GetStreamProvider(streamProvider ?? StreamProviders.Default)
-                    .GetStream<MessagesWatcherEvent>(StreamId.Create(StreamNamespaces.ForMessagesWatcher(guildId),
-                                                                     guildId.ToString("D")));
+            .GetStream<MessagesWatcherEvent>(StreamId.Create(StreamNamespaces.ForMessagesWatcher(guildId),
+                guildId.ToString("D")));
     }
 
     public static IAsyncStream<TriggerEvent> GetTriggersStream(this Grain grain, ulong guildId,
-                                                               string?    streamProvider = null)
+        string? streamProvider = null)
     {
         return grain.GetStreamProvider(streamProvider ?? StreamProviders.Default)
-                    .GetStream<TriggerEvent>(StreamId.Create(StreamNamespaces.ForTriggers(guildId),
-                                                             guildId.ToString("d")));
+            .GetStream<TriggerEvent>(StreamId.Create(StreamNamespaces.ForTriggers(guildId),
+                guildId.ToString("d")));
     }
 }

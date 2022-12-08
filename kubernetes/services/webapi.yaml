@@ -1,35 +1,35 @@
 ﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: silo
+  name: webapi
   namespace: ap
   labels:
-    app: silo
-    orleans/serviceId: silo
+    app: webapi
+    orleans/serviceId: webapi
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: silo
-      orleans/serviceId: silo
+      app: webapi
+      orleans/serviceId: webapi
   template:
     metadata:
       labels:
-        app: silo
-        orleans/serviceId: silo
+        app: webapi
+        orleans/serviceId: webapi
         orleans/clusterId: PierogiesBot
     spec:
       containers:
-        - name: silo
-          image: ghcr.io/avabin/pierogiesbot/silo:main
+        - name: webapi
+          image: ghcr.io/avabin/pierogiesbot/webapi:main
           imagePullPolicy: Always
           ports:
             - containerPort: 11111
-              name: silo-api
+              name: webapi-api
             - containerPort: 30000
-              name: silo-gateway
+              name: webapi-gateway
           env:
-            - name: DOTNET_ENVIRONMENT
+            - name: ASPNETCORE_ENVIRONMENT
               value: "Kubernetes"
             - name: ORLEANS_SERVICE_ID
               valueFrom:
@@ -51,51 +51,34 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: DOTNET_SHUTDOWNTIMEOUTSECONDS
+            - name: ASPNETCORE_SHUTDOWNTIMEOUTSECONDS
               value: "120"
-            - name: DOTNET_Blizzard__ClientId
-              valueFrom:
-                secretKeyRef:
-                  name: silo-secrets
-                  key: blizzard-client-id
-            - name: DOTNET_Blizzard__ClientSecret
-              valueFrom:
-                secretKeyRef:
-                  name: silo-secrets
-                  key: blizzard-client-secret
-            - name: DOTNET_Discord__Token
-              valueFrom:
-                secretKeyRef:
-                  name: silo-secrets
-                  key: discord-token
-            - name: DOTNET_RabbitMQSettings__Host
+            - name: ASPNETCORE_RabbitMQSettings__Host
               value: "rabbitmq"
-            - name: DOTNET_RabbitMQSettings__UserName
+            - name: ASPNETCORE_RabbitMQSettings__UserName
               valueFrom:
                 secretKeyRef:
                   name: silo-secrets
                   key: rabbitmq-user
-            - name: DOTNET_RabbitMQSettings__Password
+            - name: ASPNETCORE_RabbitMQSettings__Password
               valueFrom:
                 secretKeyRef:
                   key: rabbitmq-pass
                   name: silo-secrets
-            - name: DOTNET_RabbitMQSettings__VirtualHost
+            - name: ASPNETCORE_RabbitMQSettings__VirtualHost
               value: "/"
-            - name: DOTNET_RabbitMQSettings__Port
+            - name: ASPNETCORE_RabbitMQSettings__Port
               value: "5672"
-            - name: DOTNET_ConnectionStrings__MongoDB
+            - name: ASPNETCORE_ConnectionStrings__MongoDB
               valueFrom:
                 secretKeyRef:
                   name: silo-secrets
                   key: mongodb-connstring
-            - name: DOTNET_Seq__ServerUrl
+            - name: ASPNETCORE_Seq__ServerUrl
               valueFrom:
                 secretKeyRef:
-                  name: silo-secrets
+                  name: webapi-secrets
                   key: seq-url
-            - name: DOTNET_SiloType
-              value: "All"
           resources:
             requests:
               memory: "256Mi"

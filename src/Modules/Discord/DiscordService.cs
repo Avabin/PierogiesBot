@@ -18,20 +18,21 @@ internal class DiscordService : IDiscordService
     private const string ActivityName = "Discord.Commands";
 
     private readonly AsyncLazy<DiscordSocketClient> _client;
-    private readonly AsyncLazy<InteractionService>  _interactionService;
-    private readonly ILogger<DiscordService>        _logger;
+    private readonly AsyncLazy<InteractionService> _interactionService;
+    private readonly ILogger<DiscordService> _logger;
 
 
-    private readonly ISubject<SocketMessage>   _messageSubject = new Subject<SocketMessage>();
+    private readonly ISubject<SocketMessage> _messageSubject = new Subject<SocketMessage>();
     private readonly IOptions<DiscordSettings> _options;
-    private readonly IServiceProvider          _serviceProvider;
-    private          IDisposable?              _subscription;
+    private readonly IServiceProvider _serviceProvider;
+    private bool _interactionsInstalled;
+    private IDisposable? _subscription;
 
     public DiscordService(IOptions<DiscordSettings> options, ILogger<DiscordService> logger,
-                          IServiceProvider          serviceProvider)
+        IServiceProvider serviceProvider)
     {
-        _options         = options;
-        _logger          = logger;
+        _options = options;
+        _logger = logger;
         _serviceProvider = serviceProvider;
 
         _client = new AsyncLazy<DiscordSocketClient>(async () =>
@@ -43,12 +44,12 @@ internal class DiscordService : IDiscordService
                 var logLevel = message.Severity switch
                 {
                     LogSeverity.Critical => LogLevel.Critical,
-                    LogSeverity.Error    => LogLevel.Error,
-                    LogSeverity.Warning  => LogLevel.Warning,
-                    LogSeverity.Info     => LogLevel.Information,
-                    LogSeverity.Verbose  => LogLevel.Trace,
-                    LogSeverity.Debug    => LogLevel.Debug,
-                    _                    => LogLevel.None
+                    LogSeverity.Error => LogLevel.Error,
+                    LogSeverity.Warning => LogLevel.Warning,
+                    LogSeverity.Info => LogLevel.Information,
+                    LogSeverity.Verbose => LogLevel.Trace,
+                    LogSeverity.Debug => LogLevel.Debug,
+                    _ => LogLevel.None
                 };
 
                 if (logLevel is LogLevel.Error || message.Exception is not null)
@@ -96,7 +97,9 @@ internal class DiscordService : IDiscordService
 
     public async Task InstallInteractionsAsync(Assembly assembly)
     {
-        var client             = await _client.Value;
+        if (_interactionsInstalled)
+            return;
+        var client = await _client.Value;
         var interactionService = await _interactionService.Value;
         _logger.LogInformation("Installing interactions...");
         interactionService.Log += message =>
@@ -104,12 +107,12 @@ internal class DiscordService : IDiscordService
             var logLevel = message.Severity switch
             {
                 LogSeverity.Critical => LogLevel.Critical,
-                LogSeverity.Error    => LogLevel.Error,
-                LogSeverity.Warning  => LogLevel.Warning,
-                LogSeverity.Info     => LogLevel.Information,
-                LogSeverity.Verbose  => LogLevel.Debug,
-                LogSeverity.Debug    => LogLevel.Trace,
-                _                    => throw new ArgumentOutOfRangeException(nameof(message), "has wrong LogSeverity!")
+                LogSeverity.Error => LogLevel.Error,
+                LogSeverity.Warning => LogLevel.Warning,
+                LogSeverity.Info => LogLevel.Information,
+                LogSeverity.Verbose => LogLevel.Debug,
+                LogSeverity.Debug => LogLevel.Trace,
+                _ => throw new ArgumentOutOfRangeException(nameof(message), "has wrong LogSeverity!")
             };
             if (message.Exception is not null) _logger.LogError(message.Exception, message.Message);
             else _logger.Log(logLevel, message.Message);
@@ -123,33 +126,35 @@ internal class DiscordService : IDiscordService
         client.InteractionCreated += async interaction =>
         {
             using var activity = ActivitySource.StartActivity(ActivityName, ActivityKind.Server);
-            var       tags     = GetTags(interaction);
+            var tags = GetTags(interaction);
             foreach (var (key, value) in tags) activity?.SetTag(key, value);
-            var guildId       = interaction.GuildId!.Value;
+            var guildId = interaction.GuildId!.Value;
             var interactionId = interaction.Id;
             _logger.LogTrace("Interaction created: {InteractionId}", interactionId);
 
             try
             {
                 activity?.Start();
-                var scope  = _serviceProvider.CreateScope();
-                var ctx    = new SocketInteractionContext(client, interaction);
+                var scope = _serviceProvider.CreateScope();
+                var ctx = new SocketInteractionContext(client, interaction);
                 var result = await interactionService.ExecuteCommandAsync(ctx, scope.ServiceProvider);
                 if (result.IsSuccess) activity?.SetStatus(ActivityStatusCode.Ok);
             }
             catch (Exception e)
             {
                 activity?.SetStatus(ActivityStatusCode.Error);
-                activity?.SetTag("error",      e.Message);
+                activity?.SetTag("error", e.Message);
                 activity?.SetTag("stacktrace", e.StackTrace);
 
                 _logger.LogError(e, "Error while executing interaction {InteractionId} in guild {GuildId}",
-                                 interactionId, guildId);
+                    interactionId, guildId);
                 throw;
             }
 
             activity?.Stop();
         };
+
+        _interactionsInstalled = true;
     }
 
     public async Task InstallInteractionsAsync()
@@ -179,8 +184,8 @@ internal class DiscordService : IDiscordService
     {
         duration ??= TimeSpan.FromDays(1);
         var client = await _client.Value;
-        var guild  = client.GetGuild(guildId);
-        var user   = guild.GetUser(userId);
+        var guild = client.GetGuild(guildId);
+        var user = guild.GetUser(userId);
         _logger.LogInformation("Timimg out {User} in {Guild} for {Duration}", user, guild, duration);
         await user.SetTimeOutAsync(duration.Value);
     }
@@ -188,9 +193,9 @@ internal class DiscordService : IDiscordService
     public ImmutableList<ulong> GetUserRoles(ulong guildId, ulong userId)
     {
         var client = _client.Value.GetAwaiter().GetResult();
-        var guild  = client.GetGuild(guildId);
-        var user   = guild.GetUser(userId);
-        var roles  = user.Roles.Select(x => x.Id).ToImmutableList();
+        var guild = client.GetGuild(guildId);
+        var user = guild.GetUser(userId);
+        var roles = user.Roles.Select(x => x.Id).ToImmutableList();
 
         return roles;
     }
@@ -198,8 +203,8 @@ internal class DiscordService : IDiscordService
     public async Task UnmuteUserAsync(ulong userId, ulong guildId)
     {
         var client = await _client.Value;
-        var guild  = client.GetGuild(guildId);
-        var user   = guild.GetUser(userId);
+        var guild = client.GetGuild(guildId);
+        var user = guild.GetUser(userId);
         _logger.LogInformation("Clearing timeout for {User} in {Guild}", user, guild);
         await user.RemoveTimeOutAsync();
     }
@@ -207,8 +212,8 @@ internal class DiscordService : IDiscordService
     public async Task BanUserAsync(ulong userId, ulong guildId)
     {
         var client = await _client.Value;
-        var guild  = client.GetGuild(guildId);
-        var user   = guild.GetUser(userId);
+        var guild = client.GetGuild(guildId);
+        var user = guild.GetUser(userId);
         _logger.LogInformation("Banning {User} in {Guild}", user, guild);
         await user.BanAsync();
     }
@@ -216,7 +221,7 @@ internal class DiscordService : IDiscordService
     public async Task UnbanUserAsync(ulong userId, ulong guildId)
     {
         var client = await _client.Value;
-        var guild  = client.GetGuild(guildId);
+        var guild = client.GetGuild(guildId);
         _logger.LogInformation("Unbanning {User} in {Guild}", userId, guild);
         await guild.RemoveBanAsync(userId);
     }
@@ -224,8 +229,8 @@ internal class DiscordService : IDiscordService
     public async Task KickUserAsync(ulong userId, ulong guildId)
     {
         var client = await _client.Value;
-        var guild  = client.GetGuild(guildId);
-        var user   = guild.GetUser(userId);
+        var guild = client.GetGuild(guildId);
+        var user = guild.GetUser(userId);
         _logger.LogInformation("Kicking {User} in {Guild}", user, guild);
         await user.KickAsync();
     }
@@ -233,7 +238,7 @@ internal class DiscordService : IDiscordService
     public async Task<ulong> CreateRoleAsync(ulong guildId, string name, byte r, byte g, byte b)
     {
         var client = await _client.Value;
-        var guild  = client.GetGuild(guildId);
+        var guild = client.GetGuild(guildId);
 
         _logger.LogInformation("Creating role {Name} in {Guild}", name, guild);
         var role = await guild.CreateRoleAsync(name, GuildPermissions.None, new Color(r, g, b), false, false);
@@ -244,8 +249,8 @@ internal class DiscordService : IDiscordService
     public async Task DeleteRoleAsync(ulong guildId, ulong id)
     {
         var client = await _client.Value;
-        var guild  = client.GetGuild(guildId);
-        var role   = guild.GetRole(id);
+        var guild = client.GetGuild(guildId);
+        var role = guild.GetRole(id);
         _logger.LogInformation("Deleting {Role} in {Guild}", role, guild);
         await role.DeleteAsync();
     }
@@ -253,7 +258,7 @@ internal class DiscordService : IDiscordService
     public async Task ArchiveThreadAsync(ulong guildId, ulong threadId)
     {
         var client = await _client.Value;
-        var guild  = client.GetGuild(guildId);
+        var guild = client.GetGuild(guildId);
         var thread = guild.GetThreadChannel(threadId);
 
         _logger.LogInformation("Archiving {Thread} in {Guild}", thread, guild);
@@ -264,7 +269,7 @@ internal class DiscordService : IDiscordService
     {
         var client = await _client.Value;
         var emojis = client.Guilds.SelectMany(x => x.Emotes).Select(x => new DiscordEmoji(x.Name, x.ToString(), x.Id))
-                           .ToList();
+            .ToList();
 
         return emojis;
     }
@@ -331,7 +336,7 @@ internal class DiscordService : IDiscordService
 
     public async Task<ulong> GetChannelGuildIdAsync(ulong channelId)
     {
-        var client  = await _client.Value;
+        var client = await _client.Value;
         var channel = await client.GetChannelAsync(channelId);
         if (channel is SocketGuildChannel guildChannel) return guildChannel.Guild.Id;
 
@@ -389,12 +394,12 @@ internal class DiscordService : IDiscordService
 
     private async Task RegisterInteractionsForGuilds()
     {
-        var client             = await _client.Value;
+        var client = await _client.Value;
         var interactionService = await _interactionService.Value;
 
         await Parallel.ForEachAsync(client.Guilds,
-                                    async (guild, _) =>
-                                        await interactionService.RegisterCommandsToGuildAsync(guild.Id));
+            async (guild, _) =>
+                await interactionService.RegisterCommandsToGuildAsync(guild.Id));
     }
 
     private Task OnMessageReceivedAsync(SocketMessage message)
@@ -405,7 +410,7 @@ internal class DiscordService : IDiscordService
 
     public async Task<SocketTextChannel> GetChannelAsync(ulong channelId)
     {
-        var client  = await _client.Value;
+        var client = await _client.Value;
         var channel = await client.GetChannelAsync(channelId);
         if (channel is SocketTextChannel textChannel) return textChannel;
 
@@ -416,7 +421,7 @@ internal class DiscordService : IDiscordService
     public async Task<IEmote?> GetEmote(string emoteName)
     {
         var client = await _client.Value;
-        var emote  = client.Guilds.SelectMany(x => x.Emotes).FirstOrDefault(x => x.Name == emoteName);
+        var emote = client.Guilds.SelectMany(x => x.Emotes).FirstOrDefault(x => x.Name == emoteName);
 
         return emote;
     }
@@ -426,7 +431,7 @@ internal class DiscordService : IDiscordService
     {
         return new Dictionary<string, object>()
         {
-            { "discord.guild_id", interaction.GuildId     ?? 0 },
+            { "discord.guild_id", interaction.GuildId ?? 0 },
             { "discord.channel_id", interaction.ChannelId ?? 0 },
             { "discord.interaction_id", interaction.Id },
             { "discord.user", interaction.User }
