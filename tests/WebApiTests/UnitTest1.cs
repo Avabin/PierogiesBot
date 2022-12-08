@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Newtonsoft.Json;
 using RestEase;
 using Shared;
@@ -6,6 +6,7 @@ using Shared.MessageTriggers;
 
 namespace WebApiTests;
 
+[Category("ApiTests")]
 public class Tests
 {
     private IPierogiesBotApi _pierogiesBotApi;
@@ -37,5 +38,8 @@ public class Tests
 
         // Assert
         actual.Should().BeEquivalentTo(expected);
+        
+        // Cleanup
+        await _pierogiesBotApi.DeleteMessageTriggerAsync(guildId, expected.Name);
     }
 }
