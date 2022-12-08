@@ -129,6 +129,29 @@ public static class ApplicationHostExtensions
     public static HostApplicationBuilder AddClusterClient(this HostApplicationBuilder builder, string clusterId = "dev",
         string serviceId = "dev")
     {
+        var seqUrl = builder.Configuration.GetValue<string>("Seq:ServerUrl");
+        if (seqUrl is not ("" or null))
+        {
+            var logger = new LoggerConfiguration()
+                .Filter.ByExcluding(@event =>
+                    @event.Properties["SourceContext"].ToString().Replace("\"", "").StartsWith("Microsoft"))
+                .Filter.ByExcluding(@event =>
+                    @event.Properties["SourceContext"].ToString().Replace("\"", "").StartsWith("Orleans") &&
+                    @event.Level < LogEventLevel.Information)
+                .Enrich.FromLogContext()
+                .Enrich.WithMachineName()
+                .Enrich.WithEnvironmentName()
+                .MinimumLevel.Verbose().WriteTo.Console()
+                .MinimumLevel.Debug().WriteTo.Seq(seqUrl)
+                .CreateLogger();
+
+            builder.Logging.ClearProviders().AddSerilog(logger);
+        }
+        else
+        {
+            builder.Logging.AddConsole();
+        }
+
         builder.Services.AddClusterClient(clusterId, serviceId, builder.Environment, builder.Configuration);
 
         return builder;
@@ -138,6 +161,29 @@ public static class ApplicationHostExtensions
         IConfiguration configuration, string clusterId = "dev",
         string serviceId = "dev")
     {
+        var seqUrl = configuration.GetValue<string>("Seq:ServerUrl");
+        if (seqUrl is not ("" or null))
+        {
+            var logger = new LoggerConfiguration()
+                .Filter.ByExcluding(@event =>
+                    @event.Properties["SourceContext"].ToString().Replace("\"", "").StartsWith("Microsoft"))
+                .Filter.ByExcluding(@event =>
+                    @event.Properties["SourceContext"].ToString().Replace("\"", "").StartsWith("Orleans") &&
+                    @event.Level < LogEventLevel.Information)
+                .Enrich.FromLogContext()
+                .Enrich.WithMachineName()
+                .Enrich.WithEnvironmentName()
+                .MinimumLevel.Verbose().WriteTo.Console()
+                .MinimumLevel.Debug().WriteTo.Seq(seqUrl)
+                .CreateLogger();
+
+            builder.ConfigureLogging(logging => logging.ClearProviders().AddSerilog(logger));
+        }
+        else
+        {
+            builder.ConfigureLogging(logging => logging.AddConsole());
+        }
+
         builder.ConfigureServices((context, collection) =>
         {
             collection.AddClusterClient(clusterId, serviceId, environment, configuration);

@@ -15,7 +15,7 @@ public class GuildTriggersMessageWatcherGrain : EventSubscriberGrain<GuildReacti
 {
     private ulong _guildId;
 
-    public async Task AddAsync(string name, MessageTrigger messageTrigger)
+    public async Task AddAsync(string name, IMessageTrigger messageTrigger)
     {
         State = State.Add(name, messageTrigger);
         await WriteStateAsync();
@@ -53,6 +53,11 @@ public class GuildTriggersMessageWatcherGrain : EventSubscriberGrain<GuildReacti
         return Task.FromResult(State.Triggers.Value.ContainsKey(name));
     }
 
+    public Task<IMessageTrigger> GetMessageTriggerAsync(string triggerName)
+    {
+        return Task.FromResult(State.Triggers.Value[triggerName]);
+    }
+
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         var id = this.GetPrimaryKeyString();
@@ -66,7 +71,9 @@ public class GuildTriggersMessageWatcherGrain : EventSubscriberGrain<GuildReacti
 
         if (!matched.Any()) return;
 
-        var message = new ExecuteTriggers(matched.Select(x => x.Value with { Name = x.Key }).ToImmutableList(),
+        var message = new ExecuteTriggers(
+            matched.Cast<KeyValuePair<string, MessageTrigger>>().Select(x => x.Value with { Name = x.Key })
+                .ToImmutableList(),
             @event.ChannelId,
             @event.MessageId);
 
@@ -76,24 +83,24 @@ public class GuildTriggersMessageWatcherGrain : EventSubscriberGrain<GuildReacti
 
 [Immutable]
 [GenerateSerializer]
-public record GuildReactionsState([property: Id(0)] Immutable<Dictionary<string, MessageTrigger>> Triggers,
+public record GuildReactionsState([property: Id(0)] Immutable<Dictionary<string, IMessageTrigger>> Triggers,
     [property: Id(1)] ImmutableList<ulong> MutedChannels)
 {
     public GuildReactionsState() :
-        this(new Immutable<Dictionary<string, MessageTrigger>>(new Dictionary<string, MessageTrigger>()),
+        this(new Immutable<Dictionary<string, IMessageTrigger>>(new Dictionary<string, IMessageTrigger>()),
             ImmutableList<ulong>.Empty)
     {
     }
 
-    public GuildReactionsState Add(string name, MessageTrigger messageTrigger)
+    public GuildReactionsState Add(string name, IMessageTrigger messageTrigger)
     {
-        var newTriggers = new Dictionary<string, MessageTrigger>(Triggers.Value) { [name] = messageTrigger };
+        var newTriggers = new Dictionary<string, IMessageTrigger>(Triggers.Value) { [name] = messageTrigger };
         return this with { Triggers = newTriggers.AsImmutable() };
     }
 
     public GuildReactionsState Remove(string name)
     {
-        var newTriggers = new Dictionary<string, MessageTrigger>(Triggers.Value);
+        var newTriggers = new Dictionary<string, IMessageTrigger>(Triggers.Value);
         newTriggers.Remove(name);
         return this with { Triggers = newTriggers.AsImmutable() };
     }
@@ -112,7 +119,7 @@ public record GuildReactionsState([property: Id(0)] Immutable<Dictionary<string,
         return this with { MutedChannels = MutedChannels.Remove(channelId) };
     }
 
-    public ImmutableList<KeyValuePair<string, MessageTrigger>> Match(string eventContent)
+    public ImmutableList<KeyValuePair<string, IMessageTrigger>> Match(string eventContent)
     {
         return Triggers.Value.Where(x => x.Value.IsMatch(eventContent)).ToImmutableList();
     }

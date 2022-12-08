@@ -4,11 +4,9 @@ name: Trigger auto deployment for silo
 on:
   # Automatically trigger it when detected changes in repo
   push:
-    branches: 
-      [ main ]
     paths:
       - 'src/Modules/**{cs,csproj}'
-      - 'src/Services/Silo/**{cs,json,csproj}'
+      - 'src/Services/Silo/**{cs,json,Dockerfile,csproj}'
       - '.github/workflows/silo-AutoDeployTrigger-27b23e40-05ef-4576-9917-4267f92728d1.yml'
 
   # Allow mannually trigger 
