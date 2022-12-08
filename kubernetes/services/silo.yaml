@@ -7,7 +7,7 @@ metadata:
     app: silo
     orleans/serviceId: silo
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: silo
@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: silo
-          image: ghcr.io/avabin/pierogiesbot/silo:main
+          image: ghcr.io/avabin/pierogiesbot/silo:tests
           imagePullPolicy: Always
           ports:
             - containerPort: 11111

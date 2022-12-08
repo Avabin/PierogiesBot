@@ -4,4 +4,4 @@ namespace GrainInterfaces.Discord.Guilds.Events;
 
 [Immutable]
 [GenerateSerializer]
-public record TriggerCreated([property: Id(0)] MessageTrigger Trigger) : TriggerEvent;
+public record TriggerCreated([property: Id(0)] IMessageTrigger Trigger) : TriggerEvent;

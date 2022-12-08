@@ -20,7 +20,7 @@ builder.Services.AddControllers().AddNewtonsoftJson(options =>
 });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddClusterClient("PierogiesBot", "WebApi", builder.Environment, builder.Configuration);
+builder.Host.AddClusterClient(builder.Environment, builder.Configuration, "PierogiesBot", "WebApi");
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();

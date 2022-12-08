@@ -7,7 +7,7 @@ metadata:
     app: webapi
     orleans/serviceId: webapi
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: webapi
@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: webapi
-          image: ghcr.io/avabin/pierogiesbot/webapi:main
+          image: ghcr.io/avabin/pierogiesbot/webapi:tests
           imagePullPolicy: Always
           ports:
             - containerPort: 11111
@@ -77,7 +77,7 @@ spec:
             - name: ASPNETCORE_Seq__ServerUrl
               valueFrom:
                 secretKeyRef:
-                  name: webapi-secrets
+                  name: silo-secrets
                   key: seq-url
           resources:
             requests:
@@ -86,10 +86,8 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
-      terminationGracePeriodSeconds: 120
       imagePullSecrets:
         - name: ghcr
-  minReadySeconds: 60
   strategy:
     rollingUpdate:
       maxSurge: 1
