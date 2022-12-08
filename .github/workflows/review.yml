@@ -32,7 +32,7 @@ jobs:
       - name: Destroy Preview Environment
         # You may pin to the exact commit or the version.
         # uses: okteto/destroy-preview@6d681c4d1c1c69277b916601c0b67a05135d9688
-        uses: okteto/destroy-preview@1.14.5
+        uses: okteto/destroy-preview@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
