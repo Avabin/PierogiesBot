@@ -28,7 +28,7 @@ public class GuildScheduledMessagesWatcherGrain :
         _logger = logger;
     }
 
-    public async Task AddAsync(ScheduledMessage message)
+    public async Task AddAsync(IScheduledMessage message)
     {
         _logger.LogInformation("Adding scheduled message '{Name}' to guild {GuildId}", message.Name, _guildId);
         State = State.Add(message);
@@ -94,7 +94,7 @@ public class GuildScheduledMessagesWatcherGrain :
         await base.OnActivateAsync(cancellationToken);
     }
 
-    private async Task ScheduleAsync(ScheduledMessage message)
+    private async Task ScheduleAsync(IScheduledMessage message)
     {
         _logger.LogDebug("Scheduling message '{@Message}' for guild {GuildId}", message, _guildId);
         var guildGrain = GrainFactory.GetDiscordGuildGrain(_guildId);
@@ -151,28 +151,28 @@ public class GuildScheduledMessagesWatcherGrain :
 [Immutable]
 [GenerateSerializer]
 public record GuildScheduledMessagesWatcherGrainState(
-    [property: Id(0)] Immutable<Dictionary<string, ScheduledMessage>> ScheduledMessages
+    [property: Id(0)] Immutable<Dictionary<string, IScheduledMessage>> ScheduledMessages
 )
 {
-    public GuildScheduledMessagesWatcherGrainState() : this(new Dictionary<string, ScheduledMessage>().AsImmutable())
+    public GuildScheduledMessagesWatcherGrainState() : this(new Dictionary<string, IScheduledMessage>().AsImmutable())
     {
     }
 
-    public GuildScheduledMessagesWatcherGrainState Add(ScheduledMessage message)
+    public GuildScheduledMessagesWatcherGrainState Add(IScheduledMessage message)
     {
-        var dict = new Dictionary<string, ScheduledMessage>(ScheduledMessages.Value);
+        var dict = new Dictionary<string, IScheduledMessage>(ScheduledMessages.Value);
         dict[message.Name] = message;
         return this with { ScheduledMessages = dict.AsImmutable() };
     }
 
     public GuildScheduledMessagesWatcherGrainState Remove(string name)
     {
-        var dict = new Dictionary<string, ScheduledMessage>(ScheduledMessages.Value);
+        var dict = new Dictionary<string, IScheduledMessage>(ScheduledMessages.Value);
         dict.Remove(name);
         return this with { ScheduledMessages = dict.AsImmutable() };
     }
 
-    public ScheduledMessage? GetByName(string reminderName)
+    public IScheduledMessage? GetByName(string reminderName)
     {
         return ScheduledMessages.Value.TryGetValue(reminderName, out var message) ? message : null;
     }

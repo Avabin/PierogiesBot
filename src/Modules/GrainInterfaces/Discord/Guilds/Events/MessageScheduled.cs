@@ -9,7 +9,7 @@ public record ScheduledMessageEvent;
 [Immutable]
 [GenerateSerializer]
 public record MessageScheduled
-    ([property: Id(0)] ScheduledMessage Message, [property: Id(1)] ulong GuildId) : ScheduledMessageEvent;
+    ([property: Id(0)] IScheduledMessage Message, [property: Id(1)] ulong GuildId) : ScheduledMessageEvent;
 
 // MessageUnregistered
 [Immutable]

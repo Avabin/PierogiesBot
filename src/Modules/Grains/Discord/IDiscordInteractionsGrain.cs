@@ -3,7 +3,7 @@ using GrainInterfaces.Discord;
 
 namespace Grains.Discord;
 
-public class DiscordInteractionsGrain : Grain, IDiscordInteractionsGrain
+public class DiscordInteractionsGrain : IDiscordInteractionsGrain
 {
     private readonly IDiscordService _discordService;
 
@@ -12,8 +12,8 @@ public class DiscordInteractionsGrain : Grain, IDiscordInteractionsGrain
         _discordService = discordService;
     }
 
-    public async Task InstallInteractionsAsync()
+    public Task InstallInteractionsAsync()
     {
-        await _discordService.InstallInteractionsAsync();
+        return _discordService.InstallInteractionsAsync();
     }
 }

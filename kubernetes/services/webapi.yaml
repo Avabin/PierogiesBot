@@ -5,23 +5,19 @@ metadata:
   namespace: ap
   labels:
     app: webapi
-    orleans/serviceId: webapi
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: webapi
-      orleans/serviceId: webapi
   template:
     metadata:
       labels:
         app: webapi
-        orleans/serviceId: webapi
-        orleans/clusterId: PierogiesBot
     spec:
       containers:
         - name: webapi
-          image: ghcr.io/avabin/pierogiesbot/webapi:main
+          image: ghcr.io/avabin/pierogiesbot/webapi:tests
           imagePullPolicy: Always
           ports:
             - containerPort: 11111
@@ -31,14 +27,6 @@ spec:
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: "Kubernetes"
-            - name: ORLEANS_SERVICE_ID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['orleans/serviceId']
-            - name: ORLEANS_CLUSTER_ID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['orleans/clusterId']
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -51,8 +39,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: ASPNETCORE_SHUTDOWNTIMEOUTSECONDS
-              value: "120"
             - name: ASPNETCORE_RabbitMQSettings__Host
               value: "rabbitmq"
             - name: ASPNETCORE_RabbitMQSettings__UserName
@@ -77,7 +63,7 @@ spec:
             - name: ASPNETCORE_Seq__ServerUrl
               valueFrom:
                 secretKeyRef:
-                  name: webapi-secrets
+                  name: silo-secrets
                   key: seq-url
           resources:
             requests:
@@ -86,10 +72,8 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
-      terminationGracePeriodSeconds: 120
       imagePullSecrets:
         - name: ghcr
-  minReadySeconds: 60
   strategy:
     rollingUpdate:
       maxSurge: 1
