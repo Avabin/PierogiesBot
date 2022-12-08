@@ -6,15 +6,15 @@ namespace Discord;
 
 public class DiscordHostedService : IHostedService
 {
-    private readonly IClusterClient            _clusterClient;
+    private readonly IClusterClient _clusterClient;
     private readonly IOptions<DiscordSettings> _options;
-    private readonly IDiscordService           _service;
+    private readonly IDiscordService _service;
 
     public DiscordHostedService(IDiscordService service, IOptions<DiscordSettings> options,
-                                IClusterClient  clusterClient)
+        IClusterClient clusterClient)
     {
-        _service       = service;
-        _options       = options;
+        _service = service;
+        _options = options;
         _clusterClient = clusterClient;
     }
 
@@ -24,7 +24,7 @@ public class DiscordHostedService : IHostedService
     {
         await _service.StartAsync();
 
-        if (Options.CommandsEnabled) await _service.InstallInteractionsAsync();
+        if (Options.CommandsEnabled) await _clusterClient.GetDiscordInteractionsGrain().InstallInteractionsAsync();
 
         await _clusterClient.GetDiscordMessagesWatcherGrain().StartWatchingAsync();
     }

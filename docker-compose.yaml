@@ -8,6 +8,8 @@
       - ./data/mongodb:/data/db
     expose:
       - 27017
+    ports:
+      - 27017:27017
     networks:
       - backend
 
@@ -19,6 +21,9 @@
     expose:
       - 5672
       - 15672
+    ports:
+      - 5672:5672
+      - 15672:15672
     networks:
       - backend
     

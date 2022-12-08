@@ -22,7 +22,7 @@ public class DiscordTriggersInteractionModule : GrainedInteractionModuleBase
         {
             var user = (SocketGuildUser)Context.User;
 
-            if (!user.Roles.Any(x => x.Permissions.Administrator))
+            if (!user.GuildPermissions.Administrator)
                 await
                     RespondAsync(
                         "You already have a trigger set up. Only administrators can have more than one trigger set up.",
